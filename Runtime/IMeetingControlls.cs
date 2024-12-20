@@ -2,9 +2,8 @@
 {
     internal interface IMeetingControlls
     {
-        void LeaveMeeting();
-        void ToggleMic(bool status);
-        void ToggleWebCam(bool status);
+        void ToggleMic(bool status, string Id);
+        void ToggleWebCam(bool status, string Id);
     }
 }
 
