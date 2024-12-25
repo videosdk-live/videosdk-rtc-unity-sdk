@@ -135,7 +135,9 @@ namespace live.videosdk
             InitializeAndroidComponent();
             InitializeVideoSDK();
 #endif
+#pragma warning disable CS0162 // Unreachable code detected
             _ = MainThreadDispatcher.Instance;
+#pragma warning restore CS0162 // Unreachable code detected
             InitializeDependecy();
         }
 
