@@ -32,11 +32,6 @@ PluginImporter:
         AndroidSharedLibraryType: Executable
         CPU: ARMv7
   - first:
-      Any: 
-    second:
-      enabled: 0
-      settings: {}
-  - first:
       Editor: Editor
     second:
       enabled: 0
@@ -49,30 +44,25 @@ PluginImporter:
     second:
       enabled: 0
       settings:
-        CPU: None
+        CPU: AnyCPU
   - first:
       Standalone: OSXUniversal
     second:
       enabled: 0
       settings:
-        CPU: None
+        CPU: AnyCPU
   - first:
       Standalone: Win
     second:
       enabled: 0
       settings:
-        CPU: None
+        CPU: AnyCPU
   - first:
       Standalone: Win64
     second:
       enabled: 0
       settings:
-        CPU: None
-  - first:
-      WebGL: WebGL
-    second:
-      enabled: 0
-      settings: {}
+        CPU: AnyCPU
   - first:
       iPhone: iOS
     second:
