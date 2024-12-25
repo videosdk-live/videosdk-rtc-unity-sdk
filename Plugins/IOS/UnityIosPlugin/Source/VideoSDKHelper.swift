@@ -34,7 +34,7 @@ func OnStreamEnabled(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<CChar>)
 func OnStreamDisabled(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<CChar>)
 
 @_silgen_name("OnVideoFrameReceived")
-func OnVideoFrameReceived(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<UInt8>, _ length: Int32)
+func OnVideoFrameReceived(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<CChar>)
 
 @objc public class VideoSDKHelper: NSObject {
     
@@ -278,7 +278,7 @@ extension VideoSDKHelper: ParticipantEventListener {
             
             DispatchQueue.global(qos: .userInitiated).async {
                 autoreleasepool {
-                    // Process only every other frame to reduce memory pressure
+                    // Process only every 3rd frame to reduce memory pressure
                     if frame.timeStampNs % 2 != 0 {
                         return
                     }
@@ -290,14 +290,13 @@ extension VideoSDKHelper: ParticipantEventListener {
                         
                         autoreleasepool {
                             guard let imageData = self.compressFrame(pixelBuffer: pixelBuffer) else { return }
+                            let base64String = imageData.base64EncodedString(options: [])
                             
                             DispatchQueue.main.async { [weak self] in
                                 guard self != nil else { return }
-                                if let idPtr = (participant.id as NSString).utf8String {
-                                    imageData.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
-                                        let bytePtr = bytes.baseAddress!.assumingMemoryBound(to: UInt8.self)
-                                        OnVideoFrameReceived(idPtr, bytePtr, Int32(imageData.count))
-                                    }
+                                if let idPtr = (participant.id as NSString).utf8String,
+                                   let dataPtr = (base64String as NSString).utf8String {
+                                    OnVideoFrameReceived(idPtr, dataPtr)
                                 }
                             }
                         }
