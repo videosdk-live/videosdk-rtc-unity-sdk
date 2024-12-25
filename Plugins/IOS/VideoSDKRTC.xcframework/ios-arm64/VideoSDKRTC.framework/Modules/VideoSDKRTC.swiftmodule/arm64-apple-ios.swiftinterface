@@ -8664,7 +8664,6 @@ extension VideoSDKRTC.VideoSDK {
   public static func getVideoPermission()
   public static func getCameras() -> [Swift.String]
   public static func getAudioDevices() -> [Swift.String]
-  public static func testUnity()
 }
 public protocol VideoSDKVideoProcessor {
   func onFrameReceived(frame: WebRTC.RTCVideoFrame) -> WebRTC.RTCVideoFrame?
