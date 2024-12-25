@@ -86,7 +86,7 @@ namespace live.videosdk
         {
             OnStreamDisabledCallback?.Invoke(id, jsonString);
         }
-        [AOT.MonoPInvokeCallback(typeof(OnStreamEnabledDelegate))]
+        [AOT.MonoPInvokeCallback(typeof(OnVideoFrameReceivedDelegate))]
         private static void OnVideoFrameReceived(string id, string jsonString)
         {
             OnVideoFrameReceivedCallback?.Invoke(id, jsonString);
