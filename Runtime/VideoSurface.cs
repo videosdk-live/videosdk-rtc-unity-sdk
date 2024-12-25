@@ -231,13 +231,11 @@ namespace live.videosdk
         public void SetAudio(bool status)
         {
             if (_participant == null) return;
-
             if (!IsLocal)
             {
                 Debug.LogError($"{name} participantId {Id} is not your local participant");
                 return;
             }
-
             _participant.ToggleMic(status);
         }
 

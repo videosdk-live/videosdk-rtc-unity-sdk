@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Android;
 using Newtonsoft.Json;
+using System.Runtime.InteropServices;
+
 namespace live.videosdk
 {
     public sealed class Meeting : MonoBehaviour
@@ -13,7 +15,8 @@ namespace live.videosdk
         private IApiCaller _apiCaller;
         public const string _meetingUri = "https://api.videosdk.live/v2/rooms";
         private static readonly Dictionary<string, IUser> _participantsDict = new Dictionary<string, IUser>();
-        public static string _meetingId { get; private set; }
+        public string MeetingID { get; private set; }
+        private IMeetingActivity _meetingActivity;
 
         #region Callbacks For User
         public event Action<string> OnCreateMeetingIdCallback;
@@ -28,7 +31,17 @@ namespace live.videosdk
         private AndroidJavaObject _applicationContext;
         private AndroidJavaClass _pluginClass;
         private AndroidJavaObject _currentActivity;
-        private IMeetingActivity _meetingActivity;
+        
+         private void InitializeVideoSDK()
+        {
+            string result = _pluginClass?.CallStatic<string>("init", _applicationContext);
+            if (!result.Equals("Success"))
+            {
+                throw new InvalidOperationException(result);
+            }
+
+        }
+
 
         private void OnPermissionGranted(string permissionName)
         {
@@ -112,50 +125,42 @@ namespace live.videosdk
             //RequestForPermission(Permission.Camera);
         }
 
-        public void Initialize()
+        private void Initialize()
         {
-            _ = MainThreadDispatcher.Instance;
+#if UNITY_EDITOR ||(!UNITY_ANDROID && !UNITY_IOS)
+            throw new PlatformNotSupportedException("Unsupported platform. Only support for Android and iOS platforms.");
+#endif
 
+#if UNITY_ANDROID
             InitializeAndroidComponent();
             InitializeVideoSDK();
+#endif
+            _ = MainThreadDispatcher.Instance;
+            InitializeDependecy();
         }
 
 
-        public void InitializeVideoSDK()
-        {
-
-            if (Application.platform == RuntimePlatform.Android)
-            {
-                string result = _pluginClass?.CallStatic<string>("init", _applicationContext);
-                if (!result.Equals("Success"))
-                {
-                    throw new InvalidOperationException(result);
-                }
-
-                InitializeDependecy();
-                Debug.Log("Video SDK Initialized successfully!");
-                return;
-            }
-            Debug.Log("Video SDK doesn't support for this platform.");
-        }
 
         private void InitializeDependecy()
         {
             _apiCaller = new ApiCaller();
-            _meetingActivity = new MeetingActivity(_pluginClass, _currentActivity);
-
-            RegisterMeetCallBacks();
-
+            _meetingActivity = MeetingActivityFactory.Create();
+            if(_meetingActivity!=null)
+            {
+                RegisterMeetCallBacks();
+            }
+            
         }
 
         private void RegisterMeetCallBacks()
         {
-            _meetingActivity.OnMeetingJoinedCallback += OnMeetingJoined;
-            _meetingActivity.OnMeetingLeftCallback += OnMeetingLeft;
-            _meetingActivity.OnParticipantJoinedCallback += OnPraticipantJoin;
-            _meetingActivity.OnParticipantLeftCallback += OnPraticipantLeft;
-            _meetingActivity.OnMeetingStateChangedCallback += OnMeetingStateChanged;
-            _meetingActivity.OnErrorCallback += OnError;
+            _meetingActivity.SubscribeToMeetingJoined(OnMeetingJoined);
+            _meetingActivity.SubscribeToMeetingLeft(OnMeetingLeft);
+            _meetingActivity.SubscribeToParticipantJoined(OnPraticipantJoin);
+            _meetingActivity.SubscribeToParticipantLeft(OnPraticipantLeft);
+            _meetingActivity.SubscribeToMeetingStateChanged(OnMeetingStateChanged);
+            _meetingActivity.SubscribeToError(OnError);
+         
         }
 
 
@@ -225,10 +230,10 @@ namespace live.videosdk
             _meetingActivity?.LeaveMeeting();
         }
 
-        #region NativeCallBacks
+#region NativeCallBacks
         private void OnMeetingJoined(string meetingId, string Id, string name, bool isLocal)
         {
-            _meetingId = meetingId;
+            MeetingID = meetingId;
             OnPraticipantJoin(Id, name, isLocal);
         }
         private void OnMeetingLeft(string Id, string name, bool isLocal)
@@ -247,7 +252,7 @@ namespace live.videosdk
         private void OnPraticipantJoin(string Id, string name, bool isLocal)
         {
             var participantData = new Participant(Id, name, isLocal);
-            _participantsDict[Id] = new User(participantData, _pluginClass);
+            _participantsDict[Id] = UserFactory.Create(participantData,MeetingControllFactory.Create());
 
             RunOnUnityMainThread(() =>
             {
@@ -257,15 +262,16 @@ namespace live.videosdk
         }
         private void OnPraticipantLeft(string Id, string name, bool isLocal)
         {
-            if (_participantsDict.TryGetValue(Id, out IUser participant))
-            {
-                participant.OnParticipantLeft();
-                _participantsDict.Remove(Id);
-            }
-
             RunOnUnityMainThread(() =>
             {
                 OnParticipantLeftCallback?.Invoke(new Participant(Id, name, isLocal));
+
+                if (_participantsDict.TryGetValue(Id, out IUser participant))
+                {
+                    participant.OnParticipantLeft();
+                    _participantsDict.Remove(Id);
+                }
+
             });
            
         }
@@ -291,7 +297,7 @@ namespace live.videosdk
            
         }
 
-        #endregion
+#endregion
 
         internal static IUser GetParticipantById(string Id)
         {

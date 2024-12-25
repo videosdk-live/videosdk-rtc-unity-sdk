@@ -1,3 +1,14 @@
 {
-	"name": "live.videosdk"
+    "name": "live.videosdk",
+    "rootNamespace": "live.videosdk",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }
