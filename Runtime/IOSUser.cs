@@ -86,12 +86,12 @@ namespace live.videosdk
 
         }
 
-        private void OnVideoFrameReceive(string id, string videoStream)
+        private void OnVideoFrameReceive(string id, byte[] byteArr)
         {
             if (!id.Equals(ParticipantId)) return;
             try
             {
-                byte[] byteArr = (Convert.FromBase64String(videoStream));
+                //byte[] byteArr = (Convert.FromBase64String(videoStream));
 
                 RunOnUnityMainThread(() =>
                 {

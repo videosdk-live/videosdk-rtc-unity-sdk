@@ -31,7 +31,7 @@ namespace live.videosdk
 
         private static event Action<string,string> OnStreamEnabledCallback;
         private static event Action<string,string> OnStreamDisabledCallback;
-        private static event Action<string,string> OnVideoFrameReceivedCallback;
+        private static event Action<string,byte[]> OnVideoFrameReceivedCallback;
 
         public void SubscribeToStreamEnabled(Action<string,string> callback)
         {
@@ -51,12 +51,12 @@ namespace live.videosdk
         {
             OnStreamDisabledCallback -= callback;
         }
-        public void SubscribeToFrameReceived(Action<string, string> callback)
+        public void SubscribeToFrameReceived(Action<string, byte[]> callback)
         {
             OnVideoFrameReceivedCallback += callback;
         }
 
-        public void UnsubscribeFromFrameReceived(Action<string, string> callback)
+        public void UnsubscribeFromFrameReceived(Action<string, byte[]> callback)
         {
             OnVideoFrameReceivedCallback -= callback;
         }
@@ -66,7 +66,7 @@ namespace live.videosdk
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnStreamDisabledDelegate(string Id, string data);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnVideoFrameReceivedDelegate(string Id, string data);
+        public delegate void OnVideoFrameReceivedDelegate(string Id, IntPtr data, int length);
 
         // Bind the delegates to native functions
         [DllImport("__Internal")]
@@ -87,9 +87,11 @@ namespace live.videosdk
             OnStreamDisabledCallback?.Invoke(id, jsonString);
         }
         [AOT.MonoPInvokeCallback(typeof(OnVideoFrameReceivedDelegate))]
-        private static void OnVideoFrameReceived(string id, string jsonString)
+        private static void OnVideoFrameReceived(string id, IntPtr data, int length)
         {
-            OnVideoFrameReceivedCallback?.Invoke(id, jsonString);
+            byte[] frameBytes = new byte[length];
+            Marshal.Copy(data, frameBytes, 0, length);
+            OnVideoFrameReceivedCallback?.Invoke(id, frameBytes);
         }
 
 

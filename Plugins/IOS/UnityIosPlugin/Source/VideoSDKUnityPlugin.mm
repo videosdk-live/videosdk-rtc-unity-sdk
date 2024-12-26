@@ -18,7 +18,7 @@ typedef void (*OnMeetingStateChangedDelegate)(const char* state);
 typedef void (*OnErrorDelegate)(const char* error);
 typedef void (*OnStreamEnabledDelegate)(const char* id, const char* data);
 typedef void (*OnStreamDisabledDelegate)(const char* id, const char* data);
-typedef void (*OnVideoFrameReceivedDelegate)(const char* id, const char* data);
+typedef void (*OnVideoFrameReceivedDelegate)(const char* id, const unsigned char* data, int length);
 
 static OnMeetingJoinedDelegate onMeetingJoinedCallback = NULL;
 static OnMeetingLeftDelegate onMeetingLeftCallback = NULL;
@@ -144,9 +144,9 @@ void OnStreamDisabled(const char* id, const char* data) {
     }
 }
 
-void OnVideoFrameReceived(const char* id, const char* data) {
+void OnVideoFrameReceived(const char* id, const unsigned char* data, int length) {
     if (onVideoFrameReceivedCallback) {
-        onVideoFrameReceivedCallback(id, data);
+        onVideoFrameReceivedCallback(id, data, length);
     }
 }
 
