@@ -18,7 +18,7 @@ void OnError(const char* error);
 
 void OnStreamEnabled(const char* id, const char* data);
 void OnStreamDisabled(const char* id, const char* data);
-void OnVideoFrameReceived(const char* id, const char* data);
+void OnVideoFrameReceived(const char* id, const unsigned char* data, int length);
 
 #ifdef __cplusplus
 }
