@@ -83,7 +83,7 @@ namespace live.videosdk
         {
             try
             {
-                byte[] byteArr = (Convert.FromBase64String(videoStream));
+                 byte[] byteArr = (Convert.FromBase64String(videoStream));
 
                 RunOnUnityMainThread(() =>
                 {
@@ -91,14 +91,11 @@ namespace live.videosdk
                 });
 
             }
-            catch (FormatException ex)
+            catch (Exception ex)
             {
-                Debug.LogError($"Invalid Base64 string: {ex.Message}");
+                Debug.LogError($"Invalid video frame data: {ex.Message}");
             }
-            catch (ArgumentNullException ex)
-            {
-                Debug.LogError($"Input string is null: {ex.Message}");
-            }
+           
 
         }
 
