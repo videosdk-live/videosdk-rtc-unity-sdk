@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace live.videosdk
 {
-    #if UNITY_IOS
+#if UNITY_IOS
     internal class IOSUser :IUser
     {
         public bool IsLocal { get; }
@@ -99,13 +99,9 @@ namespace live.videosdk
                 });
 
             }
-            catch (FormatException ex)
+            catch (Exception ex)
             {
-                Debug.LogError($"Invalid Base64 string: {ex.Message}");
-            }
-            catch (ArgumentNullException ex)
-            {
-                Debug.LogError($"Input string is null: {ex.Message}");
+                Debug.LogError($"Invalid video frame data: {ex.Message}");
             }
 
         }
@@ -118,7 +114,7 @@ namespace live.videosdk
             }
         }
 
-#region CallToNative
+    #region CallToNative
         public void ToggleWebCam(bool status)
         {
             if (_meetControlls == null)
@@ -139,7 +135,7 @@ namespace live.videosdk
         }
 
 
-#endregion
+    #endregion
 
     }
 

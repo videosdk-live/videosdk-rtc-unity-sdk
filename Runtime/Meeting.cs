@@ -32,7 +32,7 @@ namespace live.videosdk
         private AndroidJavaClass _pluginClass;
         private AndroidJavaObject _currentActivity;
         
-         private void InitializeVideoSDK()
+        private void InitializeVideoSDK()
         {
             string result = _pluginClass?.CallStatic<string>("init", _applicationContext);
             if (!result.Equals("Success"))
@@ -42,51 +42,6 @@ namespace live.videosdk
 
         }
 
-
-        private void OnPermissionGranted(string permissionName)
-        {
-            if (Permission.HasUserAuthorizedPermission(Permission.Microphone) && Permission.HasUserAuthorizedPermission(Permission.Camera))
-            {
-                InitializeAndroidComponent();
-                InitializeVideoSDK();
-                return;
-            }
-            RequestForPermission(Permission.Microphone);
-
-        }
-
-        private void OnPermissionDenied(string permissionName)
-        {
-            Debug.LogError($"VideoSDK can't Initialize {permissionName} Denied");
-
-        }
-
-        private void OnPermissionDeniedAndDontAskAgain(string permissionName)
-        {
-            Debug.LogError($"VideoSDK can't Initialize {permissionName} Denied And DontAskAgain");
-        }
-
-
-        private void RequestForPermission(string permission)
-        {
-            if (Application.platform == RuntimePlatform.Android)
-            {
-                if (Permission.HasUserAuthorizedPermission(Permission.Microphone) && Permission.HasUserAuthorizedPermission(Permission.Camera))
-                {
-                    // The user authorized use of the microphone.
-                    OnPermissionGranted("");
-                }
-                else
-                {
-                    var callbacks = new PermissionCallbacks();
-                    callbacks.PermissionDenied += OnPermissionDenied;
-                    callbacks.PermissionGranted += OnPermissionGranted;
-                    callbacks.PermissionDeniedAndDontAskAgain += OnPermissionDeniedAndDontAskAgain;
-                    Permission.RequestUserPermission(permission, callbacks);
-                }
-            }
-
-        }
 
         private void InitializeAndroidComponent()
         {
@@ -119,12 +74,6 @@ namespace live.videosdk
             return _instance;
         }
 
-        private void Awake()
-        {
-            Application.targetFrameRate = 60;
-            //RequestForPermission(Permission.Camera);
-        }
-
         private void Initialize()
         {
 #if UNITY_EDITOR ||(!UNITY_ANDROID && !UNITY_IOS)
@@ -132,8 +81,10 @@ namespace live.videosdk
 #endif
 
 #if UNITY_ANDROID
+#pragma warning disable CS0162 // Unreachable code detected
             InitializeAndroidComponent();
             InitializeVideoSDK();
+#pragma warning restore CS0162 // Unreachable code detected
 #endif
 #pragma warning disable CS0162 // Unreachable code detected
             _ = MainThreadDispatcher.Instance;
@@ -253,6 +204,10 @@ namespace live.videosdk
 
         private void OnPraticipantJoin(string Id, string name, bool isLocal)
         {
+            if(_participantsDict.ContainsKey(Id))
+            {
+                return;
+            }
             var participantData = new Participant(Id, name, isLocal);
             _participantsDict[Id] = UserFactory.Create(participantData,MeetingControllFactory.Create());
 
@@ -281,13 +236,11 @@ namespace live.videosdk
         private void OnError(string jsonString)
         {
             Error error = JsonConvert.DeserializeObject<Error>(jsonString);
-
             RunOnUnityMainThread(() =>
             {
                 OnErrorCallback?.Invoke(error);
             });
 
-            
         }
 
         private void OnMeetingStateChanged(string state)
