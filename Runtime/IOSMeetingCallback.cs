@@ -94,6 +94,7 @@ namespace live.videosdk
         {
             OnErrorCallback -= callback;
         }
+
         private static event Action<string, string, string, bool> OnMeetingJoinedCallback;
         private static event Action<string, string, bool> OnMeetingLeftCallback;
         private static event Action<string, string, bool> OnParticipantJoinedCallback;
@@ -119,6 +120,7 @@ namespace live.videosdk
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnErrorDelegate(string jsonString);
+
 
         // Bind the delegates to native functions
         [DllImport("__Internal")]
@@ -169,6 +171,7 @@ namespace live.videosdk
             OnErrorCallback?.Invoke(jsonString);
         }
 
+        
     }
 #endif
 }

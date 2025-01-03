@@ -4,6 +4,7 @@ namespace live.videosdk
 {
     internal interface IMeetingCallback
     {
+      
         void SubscribeToError(Action<string> callback);
         void SubscribeToMeetingJoined(Action<string, string, string, bool> callback);
         void SubscribeToMeetingLeft(Action<string, string, bool> callback);

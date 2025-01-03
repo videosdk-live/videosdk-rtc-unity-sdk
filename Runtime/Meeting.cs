@@ -25,6 +25,7 @@ namespace live.videosdk
         public event Action<IParticipant> OnParticipantLeftCallback;
         public event Action<string> OnMeetingStateChangedCallback;
         public event Action<Error> OnErrorCallback;
+
         #endregion
 
 #if UNITY_ANDROID
@@ -113,7 +114,7 @@ namespace live.videosdk
             _meetingActivity.SubscribeToParticipantLeft(OnPraticipantLeft);
             _meetingActivity.SubscribeToMeetingStateChanged(OnMeetingStateChanged);
             _meetingActivity.SubscribeToError(OnError);
-         
+
         }
 
 
@@ -252,7 +253,7 @@ namespace live.videosdk
            
         }
 
-#endregion
+        #endregion
 
         internal static IUser GetParticipantById(string Id)
         {

@@ -8,6 +8,7 @@
 import VideoSDKRTC
 import WebRTC
 import Foundation
+import CallKit
 
 @_silgen_name("OnMeetingJoined")
 func OnMeetingJoined(_ meetingId: UnsafePointer<CChar>, _ id: UnsafePointer<CChar>, _ name: UnsafePointer<CChar>)
@@ -36,6 +37,16 @@ func OnStreamDisabled(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<CChar>)
 @_silgen_name("OnVideoFrameReceived")
 func OnVideoFrameReceived(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<UInt8>, _ length: Int32)
 
+@_silgen_name("OnExternalCallStarted")
+func OnExternalCallStarted()
+
+@_silgen_name("OnExternalCallRinging")
+func OnExternalCallRinging()
+
+@_silgen_name("OnExternalCallHangup")
+func OnExternalCallHangup()
+
+@available(iOS 14.0, *)
 @objc public class VideoSDKHelper: NSObject {
     
     @objc public static let shared = VideoSDKHelper()
@@ -44,6 +55,7 @@ func OnVideoFrameReceived(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<UInt
     var localParticipant: Participant?
     var webCamEnabled: Bool = false
     var micEnabled: Bool = false
+    private var isCallConnected = false
     
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
     private let compressionSettings: [CFString: Any] = [
@@ -52,12 +64,21 @@ func OnVideoFrameReceived(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<UInt
     
     private var videoRenderers: [String: EmptyRenderer] = [:]
     
+    private let callObserver = CXCallObserver()
+    
+    override init() {
+        super.init()
+        setupCallMonitoring()
+    }
+    
+    private func setupCallMonitoring() {
+        callObserver.setDelegate(self, queue: nil)
+    }
+    
     @objc public func joinMeeting(token: String, meetingId: String, participantName: String, micEnabled: Bool, webCamEnabled: Bool, participantId: String) {
         VideoSDK.config(token: token)
         
-        guard let customVideoTrack = try? VideoSDK.createCameraVideoTrack(encoderConfig: .h720p_w960p, facingMode: .front, multiStream: true) else {
-            return
-        }
+        let customVideoTrack = webCamEnabled ? createCustomVideoTrack() : nil
         
         self.meeting = VideoSDK.initMeeting(
             meetingId: meetingId,
@@ -131,6 +152,54 @@ func OnVideoFrameReceived(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<UInt
         return participantsData.toJSONString()
     }
     
+    @objc public func pauseStream(participantId: String, kind: String) {
+        guard let participant = participants.first(where: { $0.id == participantId }) else {
+            print("Participant not found: \(participantId)")
+            return
+        }
+        
+        switch kind.lowercased() {
+        case "video":
+            if let videostream = participant.streams.first(where: { $1.kind == .state(value: .video) })?.value {
+                videostream.pause()
+            }
+        case "audio":
+            if let audiostream = participant.streams.first(where: { $1.kind == .state(value: .audio) })?.value {
+                audiostream.pause()
+            }
+        case "share":
+            if let sharestream = participant.streams.first(where: { $1.kind == .share })?.value {
+                sharestream.pause()
+            }
+        default:
+            print("Invalid stream kind: \(kind)")
+        }
+    }
+    
+    @objc public func resumeStream(participantId: String, kind: String) {
+        guard let participant = participants.first(where: { $0.id == participantId }) else {
+            print("Participant not found: \(participantId)")
+            return
+        }
+        
+        switch kind.lowercased() {
+        case "video":
+            if let videostream = participant.streams.first(where: { $1.kind == .state(value: .video) })?.value {
+                videostream.resume()
+            }
+        case "audio":
+            if let audiostream = participant.streams.first(where: { $1.kind == .state(value: .audio) })?.value {
+                audiostream.resume()
+            }
+        case "share":
+            if let sharestream = participant.streams.first(where: { $1.kind == .share })?.value {
+                sharestream.resume()
+            }
+        default:
+            print("Invalid stream kind: \(kind)")
+        }
+    }
+    
     private func participantToJson(_ participant: Participant) -> [String: Any] {
         return [
             "id": participant.id,
@@ -140,6 +209,7 @@ func OnVideoFrameReceived(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<UInt
     }
 }
 
+@available(iOS 14.0, *)
 extension VideoSDKHelper: MeetingEventListener {
     public func onMeetingJoined() {
         guard let localParticipant = self.meeting?.localParticipant else { return }
@@ -404,6 +474,32 @@ extension VideoSDKHelper: ParticipantEventListener {
             }
             
             return pixelBuffer
+        }
+    }
+    
+    func createCustomVideoTrack() -> CustomRTCMediaStream? {
+        guard let customVideoTrack = try? VideoSDK.createCameraVideoTrack(encoderConfig: .h720p_w960p, facingMode: .front, multiStream: true) else {
+            return nil
+        }
+        return customVideoTrack
+    }
+}
+
+@available(iOS 14.0, *)
+extension VideoSDKHelper: CXCallObserverDelegate {
+    
+    public func callObserver(_ callObserver: CXCallObserver, callChanged call: CXCall) {
+        // Only handle incoming calls
+        if !call.isOutgoing {
+            if call.hasEnded {
+                isCallConnected = false
+                OnExternalCallHangup()
+            } else if call.hasConnected && !isCallConnected {
+                isCallConnected = true
+                OnExternalCallStarted()
+            } else if !call.hasConnected && !call.hasEnded {
+                OnExternalCallRinging()
+            }
         }
     }
 }

@@ -6,6 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <CallKit/CallKit.h>
 #include "UnityFramework/UnityFramework-Swift.h"
 
 extern "C" {
@@ -19,6 +20,9 @@ typedef void (*OnErrorDelegate)(const char* error);
 typedef void (*OnStreamEnabledDelegate)(const char* id, const char* data);
 typedef void (*OnStreamDisabledDelegate)(const char* id, const char* data);
 typedef void (*OnVideoFrameReceivedDelegate)(const char* id, const unsigned char* data, int length);
+typedef void (*OnExternalCallStartedDelegate)();
+typedef void (*OnExternalCallRingingDelegate)();
+typedef void (*OnExternalCallHangupDelegate)();
 
 static OnMeetingJoinedDelegate onMeetingJoinedCallback = NULL;
 static OnMeetingLeftDelegate onMeetingLeftCallback = NULL;
@@ -29,6 +33,9 @@ static OnErrorDelegate onErrorCallback = NULL;
 static OnStreamEnabledDelegate onStreamEnabledCallback = NULL;
 static OnStreamDisabledDelegate onStreamDisabledCallback = NULL;
 static OnVideoFrameReceivedDelegate onVideoFrameReceivedCallback = NULL;
+static OnExternalCallStartedDelegate onExternalCallStartedCallback = NULL;
+static OnExternalCallRingingDelegate onExternalCallRingingCallback = NULL;
+static OnExternalCallHangupDelegate onExternalCallHangupCallback = NULL;
 
 #pragma mark - Functions called by unity
 
@@ -62,6 +69,18 @@ void toggleMic(bool status, const char* Id) {
     [[VideoSDKHelper shared] toggleMicWithStatus:status];
 }
 
+void pauseStream(const char* participantId, const char* kind) {
+    NSString *participantIdStr = [NSString stringWithUTF8String:participantId];
+    NSString *kindStr = [NSString stringWithUTF8String:kind];
+    [[VideoSDKHelper shared] pauseStreamWithParticipantId:participantIdStr kind:kindStr];
+}
+
+void resumeStream(const char* participantId, const char* kind) {
+    NSString *participantIdStr = [NSString stringWithUTF8String:participantId];
+    NSString *kindStr = [NSString stringWithUTF8String:kind];
+    [[VideoSDKHelper shared] resumeStreamWithParticipantId:participantIdStr kind:kindStr];
+}
+
 #pragma mark - Register Callback function
 
 void RegisterMeetingCallbacks(
@@ -92,6 +111,18 @@ void RegisterUserCallbacks(
     onVideoFrameReceivedCallback = onVideoFrameReceived;
     
     NSLog(@"Stream callbacks registered successfully");
+}
+
+void RegisterCallStateCallbacks(
+    OnExternalCallStartedDelegate onExternalCallStarted,
+    OnExternalCallRingingDelegate onExternalCallRinging,
+    OnExternalCallHangupDelegate onExternalCallHangup) {
+    
+    onExternalCallStartedCallback = onExternalCallStarted;
+    onExternalCallRingingCallback = onExternalCallRinging;
+    onExternalCallHangupCallback = onExternalCallHangup;
+    
+    NSLog(@"Call state callbacks registered successfully");
 }
 
 #pragma mark - Callback to Unity
@@ -147,6 +178,24 @@ void OnStreamDisabled(const char* id, const char* data) {
 void OnVideoFrameReceived(const char* id, const unsigned char* data, int length) {
     if (onVideoFrameReceivedCallback) {
         onVideoFrameReceivedCallback(id, data, length);
+    }
+}
+
+void OnExternalCallStarted() {
+    if (onExternalCallStartedCallback) {
+        onExternalCallStartedCallback();
+    }
+}
+
+void OnExternalCallRinging() {
+    if (onExternalCallRingingCallback) {
+        onExternalCallRingingCallback();
+    }
+}
+
+void OnExternalCallHangup() {
+    if (onExternalCallHangupCallback) {
+        onExternalCallHangupCallback();
     }
 }
 

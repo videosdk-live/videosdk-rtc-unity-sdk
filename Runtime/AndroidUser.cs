@@ -96,7 +96,6 @@ namespace live.videosdk
                 Debug.LogError($"Invalid video frame data: {ex.Message}");
             }
            
-
         }
 
         #region CallToNative
@@ -119,6 +118,25 @@ namespace live.videosdk
             _meetControlls.ToggleMic(status,ParticipantId);
         }
 
+        public void PauseStream(string kind)
+        {
+            if (_meetControlls == null)
+            {
+                Debug.LogError("It seems you don't have active meet instance, please join meet first");
+                return;
+            }
+            _meetControlls.PauseStream(ParticipantId,kind);
+        }
+
+        public void ResumeStream(string kind)
+        {
+            if (_meetControlls == null)
+            {
+                Debug.LogError("It seems you don't have active meet instance, please join meet first");
+                return;
+            }
+            _meetControlls.ResumeStream(ParticipantId, kind);
+        }
 
         #endregion
 

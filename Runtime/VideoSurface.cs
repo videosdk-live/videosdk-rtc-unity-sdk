@@ -217,7 +217,6 @@ namespace live.videosdk
         public void SetVideo(bool status)
         {
             if (_participant == null) return;
-
             if (!IsLocal)
             {
                 Debug.LogError($"{name} participantId {Id} is not your local participant");
@@ -225,8 +224,6 @@ namespace live.videosdk
             }
             _participant.ToggleWebCam(status);
         }
-
-
 
         public void SetAudio(bool status)
         {
@@ -239,11 +236,55 @@ namespace live.videosdk
             _participant.ToggleMic(status);
         }
 
+        public void PauseAudio()
+        {
+            if (_participant == null) return;
+            if (IsLocal)
+            {
+                Debug.LogError($"{name} participantId {Id} is local participant. This method is only accessible for remote users");
+                return;
+            }
+
+            _participant.PauseStream("audio");
+        }
+
+        public void PauseVideo()
+        {
+            if (_participant == null) return;
+            if (IsLocal)
+            {
+                Debug.LogError($"{name} participantId {Id} is local participant. This method is only accessible for remote users");
+                return;
+            }
+            _participant.PauseStream("video");
+        }
+
+        public void ResumeAudio()
+        {
+            if (_participant == null) return;
+            if (IsLocal)
+            {
+                Debug.LogError($"{name} participantId {Id} is local participant. This method is only accessible for remote users");
+                return;
+            }
+            _participant.ResumeStream("audio");
+        }
+
+        public void ResumeVideo()
+        {
+            if (_participant == null) return;
+            if (IsLocal)
+            {
+                Debug.LogError($"{name} participantId {Id} is local participant. This method is only accessible for remote users");
+                return;
+            }
+            _participant.ResumeStream("video");
+        }
+
         private void OnDestroy()
         {
             UnRegisterParticipantCallback();
         }
-
 
     }
 
