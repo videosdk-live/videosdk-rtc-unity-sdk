@@ -91,34 +91,6 @@ namespace live.videosdk
             OnErrorCallback -= callback;
         }
 
-        public void SubscribeToCallCallHangup(Action callback)
-        {
-            OnCallHangupCallback += callback;
-        }
-
-        public void UnsubscribeFromCallCallHangup(Action callback)
-        {
-            OnCallHangupCallback -= callback;
-        }
-        public void SubscribeToCallRinging(Action callback)
-        {
-            OnCallRingingCallback += callback;
-        }
-
-        public void UnsubscribeFromCallRinging(Action callback)
-        {
-            OnCallRingingCallback -= callback;
-        }
-        public void SubscribeToCallStarted(Action callback)
-        {
-            OnCallStartedCallback += callback;
-        }
-
-        public void UnsubscribeFromCallStarted(Action callback)
-        {
-            OnCallStartedCallback -= callback;
-        }
-
 
         private static event Action<string, string, string, bool> OnMeetingJoinedCallback;
         private static event Action<string, string, bool> OnMeetingLeftCallback;
@@ -156,18 +128,6 @@ namespace live.videosdk
             OnErrorCallback?.Invoke(jsonString);
         }
 
-        private void OnCallStarted()
-        {
-            OnCallStartedCallback?.Invoke();
-        }
-        private void OnCallRinging()
-        {
-            OnCallRingingCallback?.Invoke();
-        }
-        private void OnCallCallHangup()
-        {
-            OnCallHangupCallback?.Invoke();
-        }
 
     }
 #endif
