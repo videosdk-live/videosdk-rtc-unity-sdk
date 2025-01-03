@@ -85,6 +85,7 @@ namespace live.videosdk
         {
             _meetCallback.UnsubscribeFromError(callback);
         }
+
         #endregion
 
         public void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess)

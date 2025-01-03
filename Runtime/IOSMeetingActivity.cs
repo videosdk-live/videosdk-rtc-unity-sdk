@@ -78,7 +78,8 @@ namespace live.videosdk
         {
             _meetCallback.UnsubscribeFromError(callback);
         }
-#endregion
+
+        #endregion
 
         public void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess)
         {
@@ -112,8 +113,7 @@ namespace live.videosdk
         [DllImport("__Internal")]
         private static extern void joinMeeting(string token, string meetingId, string name, bool micEnable, bool camEnable, string participantId);
 
-       
-
+      
     }
 
 #endif

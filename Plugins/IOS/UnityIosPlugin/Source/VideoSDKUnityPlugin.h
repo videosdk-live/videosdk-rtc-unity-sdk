@@ -20,6 +20,10 @@ void OnStreamEnabled(const char* id, const char* data);
 void OnStreamDisabled(const char* id, const char* data);
 void OnVideoFrameReceived(const char* id, const unsigned char* data, int length);
 
+void OnExternalCallStarted();
+void OnExternalCallRinging();
+void OnExternalCallHangup();
+
 #ifdef __cplusplus
 }
 #endif

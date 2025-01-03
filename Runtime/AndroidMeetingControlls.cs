@@ -21,7 +21,15 @@ namespace live.videosdk
             _pluginClass.CallStatic("toggleMic", status);
         }
 
+        public void PauseStream(string participantId,string kind)
+        {
+            _pluginClass.CallStatic("pauseStream",participantId,kind);
+        }
 
+        public void ResumeStream(string participantId, string kind)
+        {
+            _pluginClass.CallStatic("resumeStream", participantId, kind);
+        }
     }
 
 #endif
