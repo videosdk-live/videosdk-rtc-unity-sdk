@@ -126,9 +126,7 @@ namespace live.videosdk
         private static event Action<string, string, bool> OnParticipantLeftCallback;
         private static event Action<string> OnErrorCallback;
         private static event Action<string> OnMeetingStateChangedCallback;
-        private static event Action OnCallHangupCallback;
-        private static event Action OnCallRingingCallback;
-        private static event Action OnCallStartedCallback;
+
         private void OnMeetingJoined(string meetingId, string Id, string name)
         {
             OnMeetingJoinedCallback?.Invoke(meetingId, Id, name, true);
