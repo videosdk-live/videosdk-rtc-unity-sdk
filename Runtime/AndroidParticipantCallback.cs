@@ -14,15 +14,6 @@ namespace live.videosdk
 
         public abstract void OnVideoFrameReceived(string videoStream);
 
-        // Utility to run actions on the Unity main thread safely
-        protected void RunOnUnityMainThread(Action action)
-        {
-            if (action != null)
-            {
-                MainThreadDispatcher.Instance.Enqueue(action);
-            }
-        }
-
     }
 
 #endif

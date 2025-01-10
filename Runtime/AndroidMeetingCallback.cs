@@ -91,6 +91,25 @@ namespace live.videosdk
             OnErrorCallback -= callback;
         }
 
+        public void SubscribeToAudioDeviceChanged(Action<string, string[]> callback)
+        {
+            OnAudioDeviceChangedCallback += callback;
+        }
+
+        public void UnsubscribeFromAudioDeviceChanged(Action<string, string[]> callback)
+        {
+            OnAudioDeviceChangedCallback -= callback;
+        }
+
+        public void SubscribeToFetchAudioDevice(Action<string[]> callback)
+        {
+            OnFetchAudioDeviceCallback += callback;
+        }
+
+        public void UnsubscribeFromFetchAudioDevice(Action<string[]> callback)
+        {
+            OnFetchAudioDeviceCallback -= callback;
+        }
 
         private static event Action<string, string, string, bool> OnMeetingJoinedCallback;
         private static event Action<string, string, bool> OnMeetingLeftCallback;
@@ -98,6 +117,8 @@ namespace live.videosdk
         private static event Action<string, string, bool> OnParticipantLeftCallback;
         private static event Action<string> OnErrorCallback;
         private static event Action<string> OnMeetingStateChangedCallback;
+        private static event Action<string, string[]> OnAudioDeviceChangedCallback;
+        private static event Action<string[]> OnFetchAudioDeviceCallback;
 
         private void OnMeetingJoined(string meetingId, string Id, string name)
         {
@@ -128,6 +149,15 @@ namespace live.videosdk
             OnErrorCallback?.Invoke(jsonString);
         }
 
+        private void OnAudioDeviceChanged(String selectedDevice, string[] availableDevices)
+        {
+            OnAudioDeviceChangedCallback?.Invoke(selectedDevice, availableDevices);
+        }
+
+        private void OnFetchAudioDevice(string[] availableDevices)
+        {
+            OnFetchAudioDeviceCallback?.Invoke(availableDevices);
+        }
 
     }
 #endif

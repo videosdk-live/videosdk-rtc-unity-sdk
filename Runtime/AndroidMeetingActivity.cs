@@ -86,6 +86,26 @@ namespace live.videosdk
             _meetCallback.UnsubscribeFromError(callback);
         }
 
+        public void SubscribeToAudioDeviceChanged(Action<string,string[]> callback)
+        {
+            _meetCallback.SubscribeToAudioDeviceChanged(callback);
+        }
+
+        public void UnsubscribeFromAudioDeviceChanged(Action<string,string[]> callback)
+        {
+            _meetCallback.UnsubscribeFromAudioDeviceChanged(callback);
+        }
+
+        public void SubscribeToFetchAudioDevice(Action<string[]> callback)
+        {
+            _meetCallback.SubscribeToFetchAudioDevice(callback);
+        }
+
+        public void UnsubscribeFromFetchAudioDevice(Action<string[]> callback)
+        {
+            _meetCallback.UnsubscribeFromFetchAudioDevice(callback);
+        }
+
         #endregion
 
         public void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess)
@@ -94,7 +114,8 @@ namespace live.videosdk
             {
                 //Debug.LogError("Meet Response : " + jsonResponse);
                 JObject result = JObject.Parse(jsonResponse);
-                var meetingId = result["roomId"].ToString();
+
+                var meetingId= result["roomId"].ToString();
                 onSuccess?.Invoke(meetingId);
             }
             catch (JsonReaderException ex)
@@ -104,17 +125,28 @@ namespace live.videosdk
 
         }
        
-
-        public void JoinMeeting(string token, string meetingId, string name, bool micEnable, bool camEnable, string participantId)
+        public void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId)
         {
-            _pluginClass.CallStatic("joinMeeting", _currentActivity, token, meetingId, name, micEnable, camEnable, participantId);
+            try
+            {
+                JObject result = JObject.Parse(jsonResponse);
+
+                var meetingId = result["meetingId"].ToString();
+               
+                _pluginClass.CallStatic("joinMeeting", _currentActivity, token, meetingId, name, micEnable, camEnable, participantId);
+            }
+            catch(Exception ex)
+            {
+                Debug.LogError(ex.StackTrace);
+            }
+            
         }
 
         public void LeaveMeeting()
         {
             _pluginClass.CallStatic("leave");
         }
-      
+
     }
 
 #endif

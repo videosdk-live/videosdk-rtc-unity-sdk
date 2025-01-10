@@ -95,12 +95,34 @@ namespace live.videosdk
             OnErrorCallback -= callback;
         }
 
+        public void SubscribeToAudioDeviceChanged(Action<string, string[]> callback)
+        {
+            OnAudioDeviceChangedCallback += callback;
+        }
+
+        public void UnsubscribeFromAudioDeviceChanged(Action<string, string[]> callback)
+        {
+            OnAudioDeviceChangedCallback -= callback;
+        }
+
+        public void SubscribeToFetchAudioDevice(Action<string[]> callback)
+        {
+            OnFetchAudioDeviceCallback += callback;
+        }
+
+        public void UnsubscribeFromFetchAudioDevice(Action<string[]> callback)
+        {
+            OnFetchAudioDeviceCallback -= callback;
+        }
+
         private static event Action<string, string, string, bool> OnMeetingJoinedCallback;
         private static event Action<string, string, bool> OnMeetingLeftCallback;
         private static event Action<string, string, bool> OnParticipantJoinedCallback;
         private static event Action<string, string, bool> OnParticipantLeftCallback;
         private static event Action<string> OnErrorCallback;
         private static event Action<string> OnMeetingStateChangedCallback;
+        private static event Action<string, string[]> OnAudioDeviceChangedCallback;
+        private static event Action<string[]> OnFetchAudioDeviceCallback;
 
         // Delegate definitions
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
