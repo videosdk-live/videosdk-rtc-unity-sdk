@@ -83,8 +83,7 @@ namespace live.videosdk
         {
             try
             {
-                 byte[] byteArr = (Convert.FromBase64String(videoStream));
-
+                byte[] byteArr = (Convert.FromBase64String(videoStream));
                 RunOnUnityMainThread(() =>
                 {
                     OnVideoFrameReceivedCallback?.Invoke(byteArr);
@@ -139,6 +138,25 @@ namespace live.videosdk
         }
 
         #endregion
+
+
+        // Utility to run actions on the Unity main thread safely
+        public static void RunOnUnityMainThread(Action action)
+        {
+            if (action != null)
+            {
+                MainThreadDispatcher.Instance.Enqueue(action);
+            }
+        }
+
+        // Utility to run actions on the Unity main thread safely
+        public static void ExecuteOnUnityMainThread(Action action)
+        {
+            if (action != null)
+            {
+                MainThreadDispatcher.Instance.Enqueue(action);
+            }
+        }
 
     }
 #endif
