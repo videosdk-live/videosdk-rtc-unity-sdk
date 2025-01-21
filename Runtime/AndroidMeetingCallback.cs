@@ -31,12 +31,12 @@ namespace live.videosdk
         }
 
         // Public methods to subscribe and unsubscribe to events
-        public void SubscribeToMeetingJoined(Action<string, string, string, bool> callback)
+        public void SubscribeToMeetingJoined(Action<string, string, string, bool, bool, string, string, string, string> callback)
         {
             OnMeetingJoinedCallback += callback;
         }
 
-        public void UnsubscribeFromMeetingJoined(Action<string, string, string, bool> callback)
+        public void UnsubscribeFromMeetingJoined(Action<string, string, string, bool, bool, string, string, string, string> callback)
         {
             OnMeetingJoinedCallback -= callback;
         }
@@ -111,7 +111,7 @@ namespace live.videosdk
             OnFetchAudioDeviceCallback -= callback;
         }
 
-        private static event Action<string, string, string, bool> OnMeetingJoinedCallback;
+        private static event Action<string, string, string, bool, bool , string , string , string , string > OnMeetingJoinedCallback;
         private static event Action<string, string, bool> OnMeetingLeftCallback;
         private static event Action<string, string, bool> OnParticipantJoinedCallback;
         private static event Action<string, string, bool> OnParticipantLeftCallback;
@@ -120,9 +120,9 @@ namespace live.videosdk
         private static event Action<string, string[]> OnAudioDeviceChangedCallback;
         private static event Action<string[]> OnFetchAudioDeviceCallback;
 
-        private void OnMeetingJoined(string meetingId, string Id, string name)
+        private void OnMeetingJoined(string meetingId, string Id, string name, bool enabledLogs,string logEndPoint, string jwtKey, string peerId, string sessionId)
         {
-            OnMeetingJoinedCallback?.Invoke(meetingId, Id, name, true);
+            OnMeetingJoinedCallback?.Invoke(meetingId, Id, name, true,enabledLogs,logEndPoint,jwtKey,peerId,sessionId);
         }
         private void OnMeetingLeft(string Id, string name)
         {

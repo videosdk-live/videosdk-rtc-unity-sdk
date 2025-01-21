@@ -9,12 +9,12 @@ namespace live.videosdk
     public sealed class ApiCaller : IApiCaller
     {
         private static readonly HttpClient _httpclient = new HttpClient();
-        public async Task<string> CallApiPost(string url, string token)
+        public async Task<string> CallApi(string url, string token,string jsonString)
         {
             _httpclient.Timeout = TimeSpan.FromSeconds(10); // Set timeout to 10 seconds
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Add("Authorization", token);
-            request.Content = new StringContent("", Encoding.UTF8, "application/json");
+            request.Content = new StringContent(jsonString, Encoding.UTF8, "application/json");
             try
             {
                 var response = await _httpclient.SendAsync(request);
@@ -33,7 +33,7 @@ namespace live.videosdk
             
         }
 
-        public async Task<string> CallApiGet(string url, string token)
+        public async Task<string> CallApi(string url, string token)
         {
             _httpclient.Timeout = TimeSpan.FromSeconds(10); // Set timeout to 10 seconds
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -41,16 +41,17 @@ namespace live.videosdk
             try
             {
                 var response = await _httpclient.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync();
+                var result= await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException($"API call failed: {result}");
+                }
+                //response.EnsureSuccessStatusCode();
+                return result;
             }
             catch (TaskCanceledException ex) when (!ex.CancellationToken.IsCancellationRequested)
             {
                 throw new HttpRequestException("Request timed out. Please check your internet connection.", ex);
-            }
-            catch (HttpRequestException ex)
-            {
-                throw new HttpRequestException($"API call failed: {ex.Message}", ex);
             }
 
         }

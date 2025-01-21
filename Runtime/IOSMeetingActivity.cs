@@ -7,24 +7,26 @@ using UnityEngine;
 namespace live.videosdk
 {
 
-    #if UNITY_IOS
+#if UNITY_IOS
     internal sealed class IOSMeetingActivity :IMeetingActivity
     {
         private IMeetingCallback _meetCallback;
-        public IOSMeetingActivity(IMeetingCallback meetCallback)
+        private IVideoSDKDTO _videoSdkDto;
+        public IOSMeetingActivity(IMeetingCallback meetCallback,IVideoSDKDTO videoSdkDto)
         {
             _meetCallback = meetCallback;
+            _videoSdkDto = videoSdkDto;
         }
 
-        #region meet-events
+    #region meet-events
 
         // Public methods to subscribe and unsubscribe to events
-        public void SubscribeToMeetingJoined(Action<string, string, string, bool> callback)
+        public void SubscribeToMeetingJoined(Action<string, string, string, bool, bool, string, string, string, string> callback)
         {
             _meetCallback.SubscribeToMeetingJoined(callback);
         }
 
-        public void UnsubscribeFromMeetingJoined(Action<string, string, string, bool> callback)
+        public void UnsubscribeFromMeetingJoined(Action<string, string, string, bool, bool, string, string, string, string> callback)
         {
             _meetCallback.UnsubscribeFromMeetingJoined(callback);
         }
@@ -99,7 +101,7 @@ namespace live.videosdk
             _meetCallback.UnsubscribeFromFetchAudioDevice(callback);
         }
 
-        #endregion
+    #endregion
 
         public void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess)
         {
@@ -117,15 +119,16 @@ namespace live.videosdk
 
         }
 
-        public void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId)
+        public void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId,string packageVersion)
         {
             try
             {
                 JObject result = JObject.Parse(jsonResponse);
 
                 var meetingId = result["meetingId"].ToString();
-
-                joinMeeting(token, meetingId, name, micEnable, camEnable, participantId);
+                string platform = "Unity-"+Application.platform.ToString();
+                joinMeeting(token, meetingId, name, micEnable, camEnable, participantId,packageVersion,platform);
+                _videoSdkDto.SendDTO("INFO", $"JoinMeeting:- MeetingId:{meetingId}");
             }
             catch (Exception ex)
             {
@@ -137,13 +140,14 @@ namespace live.videosdk
         public void LeaveMeeting()
         {
             leave();
+            _videoSdkDto.SendDTO("INFO", $"LeaveMeeting");
         }
 
         [DllImport("__Internal")]
         private static extern void leave();
 
         [DllImport("__Internal")]
-        private static extern void joinMeeting(string token, string meetingId, string name, bool micEnable, bool camEnable, string participantId);
+        private static extern void joinMeeting(string token, string meetingId, string name, bool micEnable, bool camEnable, string participantId, string packageVersion,string platform);
 
       
     }

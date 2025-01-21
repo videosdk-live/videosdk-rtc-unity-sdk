@@ -11,7 +11,7 @@
 
 extern "C" {
 
-typedef void (*OnMeetingJoinedDelegate)(const char* meetingId, const char* id, const char* name);
+typedef void (*OnMeetingJoinedDelegate)(const char* meetingId, const char* id, const char* name, bool enabledLogs, const char* logEndPoint, const char* jwtKey, const char* peerId, const char* sessionId);
 typedef void (*OnMeetingLeftDelegate)(const char* id, const char* name);
 typedef void (*OnParticipantJoinedDelegate)(const char* id, const char* name);
 typedef void (*OnParticipantLeftDelegate)(const char* id, const char* name);
@@ -23,6 +23,7 @@ typedef void (*OnVideoFrameReceivedDelegate)(const char* id, const unsigned char
 typedef void (*OnExternalCallStartedDelegate)();
 typedef void (*OnExternalCallRingingDelegate)();
 typedef void (*OnExternalCallHangupDelegate)();
+typedef void (*OnAudioDeviceChangedDelegate)(const char* selectedDevice, const char* deviceList);
 
 static OnMeetingJoinedDelegate onMeetingJoinedCallback = NULL;
 static OnMeetingLeftDelegate onMeetingLeftCallback = NULL;
@@ -36,23 +37,28 @@ static OnVideoFrameReceivedDelegate onVideoFrameReceivedCallback = NULL;
 static OnExternalCallStartedDelegate onExternalCallStartedCallback = NULL;
 static OnExternalCallRingingDelegate onExternalCallRingingCallback = NULL;
 static OnExternalCallHangupDelegate onExternalCallHangupCallback = NULL;
+static OnAudioDeviceChangedDelegate onAudioDeviceChangedCallback = NULL;
 
 #pragma mark - Functions called by unity
 
-void joinMeeting(const char* token, const char* meetingId, const char* name, bool micEnable, bool camEnable, const char* participantId) {
+void joinMeeting(const char* token, const char* meetingId, const char* name, bool micEnable, bool camEnable, const char* participantId, const char* sdkVersion, const char* sdkName) {
     NSString *tokenStr = [NSString stringWithUTF8String:token];
     NSString *meetingIdStr = [NSString stringWithUTF8String:meetingId];
     NSString *nameStr = [NSString stringWithUTF8String:name];
     
-    // Only create participantIdStr if participantId is not NULL
+    // Only create strings if parameters are not NULL
     NSString *participantIdStr = participantId ? [NSString stringWithUTF8String:participantId] : nil;
+    NSString *sdkVersionStr = sdkVersion ? [NSString stringWithUTF8String:sdkVersion] : nil;
+    NSString *sdkNameStr = sdkName ? [NSString stringWithUTF8String:sdkName] : nil;
     
     [[VideoSDKHelper shared] joinMeetingWithToken:tokenStr 
-                                      meetingId:meetingIdStr 
-                                participantName:nameStr 
-                                   micEnabled:micEnable 
-                                webCamEnabled:camEnable 
-                                participantId:participantIdStr];
+                                            meetingId:meetingIdStr
+                                            participantName:nameStr
+                                            micEnabled:micEnable
+                                            webCamEnabled:camEnable
+                                            participantId:participantIdStr
+                                            sdkName:sdkNameStr
+                                            sdkVersion:sdkVersionStr];
 }
 
 void leave() {
@@ -81,6 +87,21 @@ void resumeStream(const char* participantId, const char* kind) {
     [[VideoSDKHelper shared] resumeStreamWithParticipantId:participantIdStr kind:kindStr];
 }
 
+const char* getAudioDevices() {
+    NSArray<NSString *> *devices = [[VideoSDKHelper shared] getAudioDevices];
+    NSString *devicesString = [devices componentsJoinedByString:@","];
+    return strdup([devicesString UTF8String]);
+}
+
+void changeAudioDevice(const char* device) {
+    NSString *deviceStr = [NSString stringWithUTF8String:device];
+    [[VideoSDKHelper shared] changeAudioDevice:deviceStr];
+}
+
+void changeVideoDevice() {
+    [[VideoSDKHelper shared] changeVideoDevice];
+}
+
 #pragma mark - Register Callback function
 
 void RegisterMeetingCallbacks(
@@ -89,7 +110,8 @@ void RegisterMeetingCallbacks(
     OnParticipantJoinedDelegate onParticipantJoined,
     OnParticipantLeftDelegate onParticipantLeft,
     OnMeetingStateChangedDelegate onMeetingStateChanged,
-    OnErrorDelegate onError) {
+    OnErrorDelegate onError,
+    OnAudioDeviceChangedDelegate onAudioDeviceChanged) {
     
     onMeetingJoinedCallback = onMeetingJoined;
     onMeetingLeftCallback = onMeetingLeft;
@@ -97,6 +119,7 @@ void RegisterMeetingCallbacks(
     onParticipantLeftCallback = onParticipantLeft;
     onMeetingStateChangedCallback = onMeetingStateChanged;
     onErrorCallback = onError;
+    onAudioDeviceChangedCallback = onAudioDeviceChanged;
     
     NSLog(@"Meeting callbacks registered successfully");
 }
@@ -127,9 +150,9 @@ void RegisterCallStateCallbacks(
 
 #pragma mark - Callback to Unity
 
-void OnMeetingJoined(const char* meetingId, const char* id, const char* name) {
+void OnMeetingJoined(const char* meetingId, const char* id, const char* name, bool enabledLogs, const char* logEndPoint, const char* jwtKey, const char* peerId, const char* sessionId) {
     if (onMeetingJoinedCallback) {
-        onMeetingJoinedCallback(meetingId, id, name);
+        onMeetingJoinedCallback(meetingId, id, name, enabledLogs, logEndPoint, jwtKey, peerId, sessionId);
     }
 }
 
@@ -196,6 +219,12 @@ void OnExternalCallRinging() {
 void OnExternalCallHangup() {
     if (onExternalCallHangupCallback) {
         onExternalCallHangupCallback();
+    }
+}
+
+void OnAudioDeviceChanged(const char* selectedDevice, const char* deviceList) {
+    if (onAudioDeviceChangedCallback) {
+        onAudioDeviceChangedCallback(selectedDevice, deviceList);
     }
 }
 

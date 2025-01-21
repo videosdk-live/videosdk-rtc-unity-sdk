@@ -6,25 +6,35 @@ namespace live.videosdk
 #if UNITY_IOS
     internal sealed class IOSMeetingControlls : IMeetingControlls
     {
+        private IVideoSDKDTO _videoSdkDto;
+
+        public IOSMeetingControlls(IVideoSDKDTO videoSdkDto)
+        {
+             _videoSdkDto = videoSdkDto;
+        }
+
         public void ToggleWebCam(bool status,string Id)
         {
             toggleWebCam(status,Id);
-
+            _videoSdkDto.SendDTO("INFO", $"ToggleWebCam:- status:{status} ParticipantId:{Id}");
         }
 
         public void ToggleMic(bool status,string Id)
         {
             toggleMic(status,Id);
+             _videoSdkDto.SendDTO("INFO", $"ToggleMic:- status:{status} ParticipantId:{Id}");
         }
 
-        public void PauseStream(string paticipantId, string kind)
+        public void PauseStream(string participantId, string kind)
         {
-            pauseStream(paticipantId, kind);
+            pauseStream(participantId, kind);
+            _videoSdkDto.SendDTO("INFO", $"PauseStream:- ParticipantId:{participantId} Kind:{kind}");
         }
 
-        public void ResumeStream(string paticipantId, string kind)
+        public void ResumeStream(string participantId, string kind)
         {
-            resumeStream(paticipantId, kind);
+            resumeStream(participantId, kind);
+            _videoSdkDto.SendDTO("INFO", $"ResumeStream:- ParticipantId:{participantId} Kind:{kind}");
         }
 
         [DllImport("__Internal")]
