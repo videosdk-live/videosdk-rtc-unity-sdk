@@ -11,6 +11,7 @@ namespace live.videosdk
 {
     public sealed class Meeting : MonoBehaviour
     {
+
         private static Meeting _instance;
         public const string packageName = "live.videosdk.unity.android.VideoSDKUnityPlugin";
         private IApiCaller _apiCaller;
