@@ -35,12 +35,12 @@ namespace live.videosdk
         }
 
         // Public methods to subscribe and unsubscribe to events
-        public void SubscribeToMeetingJoined(Action<string, string, string, bool> callback)
+        public void SubscribeToMeetingJoined(Action<string, string, string, bool, bool, string, string, string, string> callback)
         {
             OnMeetingJoinedCallback += callback;
         }
 
-        public void UnsubscribeFromMeetingJoined(Action<string, string, string, bool> callback)
+        public void UnsubscribeFromMeetingJoined(Action<string, string, string, bool, bool, string, string, string, string> callback)
         {
             OnMeetingJoinedCallback -= callback;
         }
@@ -115,7 +115,7 @@ namespace live.videosdk
             OnFetchAudioDeviceCallback -= callback;
         }
 
-        private static event Action<string, string, string, bool> OnMeetingJoinedCallback;
+        private static event Action<string, string, string, bool, bool , string , string , string , string > OnMeetingJoinedCallback;
         private static event Action<string, string, bool> OnMeetingLeftCallback;
         private static event Action<string, string, bool> OnParticipantJoinedCallback;
         private static event Action<string, string, bool> OnParticipantLeftCallback;
@@ -126,7 +126,7 @@ namespace live.videosdk
 
         // Delegate definitions
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnMeetingJoinedDelegate(string meetingId, string Id, string name);
+        public delegate void OnMeetingJoinedDelegate(string meetingId, string Id, string name,bool enabledLogs,string logEndPoint, string jwtKey, string peerId, string sessionId);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnMeetingLeftDelegate(string Id, string name);
@@ -158,9 +158,9 @@ namespace live.videosdk
 
 
         [AOT.MonoPInvokeCallback(typeof(OnMeetingJoinedDelegate))]
-        private static void OnMeetingJoined(string meetingId, string Id, string name)
+        private static void OnMeetingJoined(string meetingId, string Id, string name, bool enabledLogs,string logEndPoint, string jwtKey, string peerId, string sessionId)
         {
-            OnMeetingJoinedCallback?.Invoke(meetingId, Id, name, true);
+            OnMeetingJoinedCallback?.Invoke(meetingId, Id, name, true,enabledLogs,logEndPoint,jwtKey,peerId,sessionId);
         }
 
         [AOT.MonoPInvokeCallback(typeof(OnMeetingLeftDelegate))]

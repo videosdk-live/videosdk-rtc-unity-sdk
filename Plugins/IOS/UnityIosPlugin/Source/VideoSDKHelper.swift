@@ -11,7 +11,7 @@ import Foundation
 import CallKit
 
 @_silgen_name("OnMeetingJoined")
-func OnMeetingJoined(_ meetingId: UnsafePointer<CChar>, _ id: UnsafePointer<CChar>, _ name: UnsafePointer<CChar>)
+func OnMeetingJoined(_ meetingId: UnsafePointer<CChar>, _ id: UnsafePointer<CChar>, _ name: UnsafePointer<CChar>, _ enabledLogs: Bool, _ logEndPoint: UnsafePointer<CChar>, _ jwtKey: UnsafePointer<CChar>, _ peerId: UnsafePointer<CChar>, _ sessionId: UnsafePointer<CChar>)
 
 @_silgen_name("OnMeetingLeft")
 func OnMeetingLeft(_ id: UnsafePointer<CChar>, _ name: UnsafePointer<CChar>)
@@ -46,6 +46,9 @@ func OnExternalCallRinging()
 @_silgen_name("OnExternalCallHangup")
 func OnExternalCallHangup()
 
+@_silgen_name("OnAudioDeviceChanged")
+func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: UnsafePointer<CChar>)
+
 @available(iOS 14.0, *)
 @objc public class VideoSDKHelper: NSObject {
     
@@ -65,24 +68,42 @@ func OnExternalCallHangup()
     private var videoRenderers: [String: EmptyRenderer] = [:]
     
     private let callObserver = CXCallObserver()
+    private var selectedAudioDevice: String?
     
     override init() {
         super.init()
         setupCallMonitoring()
+        setupAudioRouteMonitoring()
     }
     
     private func setupCallMonitoring() {
         callObserver.setDelegate(self, queue: nil)
     }
+
+    private func setupAudioRouteMonitoring() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAudioRouteChange),
+            name: AVAudioSession.routeChangeNotification,
+            object: nil
+        )
+    }
     
-    @objc public func joinMeeting(token: String, meetingId: String, participantName: String, micEnabled: Bool, webCamEnabled: Bool, participantId: String) {
+    @objc public func joinMeeting(token: String, 
+                                 meetingId: String, 
+                                 participantName: String, 
+                                 micEnabled: Bool, 
+                                 webCamEnabled: Bool, 
+                                 participantId: String? = nil,
+                                 sdkName: String? = nil,
+                                 sdkVersion: String? = nil) {
         VideoSDK.config(token: token)
         
         let customVideoTrack = webCamEnabled ? createCustomVideoTrack() : nil
         
         self.meeting = VideoSDK.initMeeting(
             meetingId: meetingId,
-            participantId: participantId,
+            participantId: participantId ?? "",
             participantName: participantName,
             micEnabled: micEnabled,
             webcamEnabled: webCamEnabled,
@@ -96,6 +117,7 @@ func OnExternalCallHangup()
             return
         }
         meeting.addEventListener(self)
+        meeting.setAttributes(sdkName ?? "", sdkVersion ?? "")
         meeting.join()
     }
     
@@ -200,6 +222,22 @@ func OnExternalCallHangup()
         }
     }
     
+    @objc public func getAudioDevices() -> [String] {
+        return VideoSDK.getAudioDevices()
+    }
+    
+    @objc public func changeAudioDevice(_ device: String) {
+        guard let meeting = meeting else {
+            self.selectedAudioDevice = device
+            return
+        }
+        meeting.changeMic(selectedDevice: device)
+    }
+    
+    @objc public func changeVideoDevice() {
+        meeting?.switchWebcam()
+    }
+    
     private func participantToJson(_ participant: Participant) -> [String: Any] {
         return [
             "id": participant.id,
@@ -212,6 +250,12 @@ func OnExternalCallHangup()
 @available(iOS 14.0, *)
 extension VideoSDKHelper: MeetingEventListener {
     public func onMeetingJoined() {
+        if let selectedAudioDevice = selectedAudioDevice {
+            meeting?.changeMic(selectedDevice: selectedAudioDevice)
+        }
+        
+        let attributes = meeting?.getAttributes() ?? [:]
+        
         guard let localParticipant = self.meeting?.localParticipant else { return }
         self.localParticipant = localParticipant
         participants.append(localParticipant)
@@ -219,8 +263,22 @@ extension VideoSDKHelper: MeetingEventListener {
         
         if let meetingIdPtr = ((meeting?.id ?? "") as NSString).utf8String,
            let idPtr = (localParticipant.id as NSString).utf8String,
-           let namePtr = (localParticipant.displayName as NSString).utf8String {
-            OnMeetingJoined(meetingIdPtr, idPtr, namePtr)
+           let namePtr = (localParticipant.displayName as NSString).utf8String,
+           let logEndPointPtr = ((attributes["logEndPoint"] as? String ?? "") as NSString).utf8String,
+           let jwtKeyPtr = ((attributes["jwtKey"] as? String ?? "") as NSString).utf8String,
+           let peerIdPtr = ((attributes["peerId"] as? String ?? "") as NSString).utf8String,
+           let sessionIdPtr = ((attributes["sessionId"] as? String ?? "") as NSString).utf8String {
+            
+            let enabledLogs = attributes["enabledLogs"] as? Bool ?? false
+            
+            OnMeetingJoined(meetingIdPtr, 
+                           idPtr, 
+                           namePtr, 
+                           enabledLogs,
+                           logEndPointPtr,
+                           jwtKeyPtr,
+                           peerIdPtr,
+                           sessionIdPtr)
         }
     }
     
@@ -272,6 +330,29 @@ extension VideoSDKHelper: MeetingEventListener {
             OnError(errorPtr)
         }
     }
+
+   @objc private func handleAudioRouteChange(notification: Notification) {
+       guard let userInfo = notification.userInfo,
+             let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+             let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
+           return
+       }
+       
+       switch reason {
+       case .newDeviceAvailable, .oldDeviceUnavailable, .override:
+           let currentRoute = AVAudioSession.sharedInstance().currentRoute
+           let currentDevice = currentRoute.inputs.first?.portName ?? ""
+           let deviceList = VideoSDK.getAudioDevices()
+           
+           let deviceListString = deviceList.description
+           if let devicePtr = (currentDevice as NSString).utf8String,
+              let listPtr = (deviceListString as NSString).utf8String {
+//               OnAudioDeviceChanged(devicePtr, listPtr)
+           }
+       default:
+           break
+       }
+   }
 }
 
 @available(iOS 14.0, *)
@@ -478,7 +559,7 @@ extension VideoSDKHelper: ParticipantEventListener {
     }
     
     func createCustomVideoTrack() -> CustomRTCMediaStream? {
-        guard let customVideoTrack = try? VideoSDK.createCameraVideoTrack(encoderConfig: .h720p_w960p, facingMode: .front, multiStream: true) else {
+        guard let customVideoTrack = try? VideoSDK.createCameraVideoTrack(encoderConfig: .h720p_w1280p, facingMode: .front, multiStream: true) else {
             return nil
         }
         return customVideoTrack

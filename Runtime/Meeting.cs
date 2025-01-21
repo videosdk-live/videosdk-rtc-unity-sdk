@@ -20,8 +20,9 @@ namespace live.videosdk
         private static readonly Dictionary<string, IUser> _participantsDict = new Dictionary<string, IUser>();
         public string MeetingID { get; private set; }
         private IMeetingActivity _meetingActivity;
+        private IVideoSDKDTO _videoSdkDto;
         public string[] _avaliableAudioDevicesArray;
-
+        private const string _packageVersion = "1.2.0";
         #region Callbacks For User
         public event Action<string> OnCreateMeetingIdCallback;
         public event Action<string> OnCreateMeetingIdFailedCallback;
@@ -38,7 +39,7 @@ namespace live.videosdk
         private AndroidJavaObject _applicationContext;
         private AndroidJavaClass _pluginClass;
         private AndroidJavaObject _currentActivity;
-        
+
         private void InitializeVideoSDK()
         {
             string result = _pluginClass?.CallStatic<string>("init", _applicationContext);
@@ -102,8 +103,9 @@ namespace live.videosdk
         private void InitializeDependecy()
         {
             _apiCaller = new ApiCaller();
-            _meetingActivity = MeetingActivityFactory.Create();
-            if(_meetingActivity!=null)
+            _videoSdkDto = new VideoSDKDTO(_apiCaller);
+            _meetingActivity = MeetingActivityFactory.Create(_videoSdkDto);
+            if (_meetingActivity!=null)
             {
                 RegisterMeetCallBacks();
             }
@@ -158,14 +160,14 @@ namespace live.videosdk
 
         private IEnumerator CreateMeetingIdCoroutine(string meetingUri, string token, Action<string> OnCreateMeeting)
         {
-            var task = _apiCaller.CallApiPost(meetingUri, token);
+            var task = _apiCaller.CallApi(meetingUri, token,"");
             while (!task.IsCompleted)
             {
                 yield return null; // Wait for the task to complete
             }
             if (task.IsFaulted)
             {
-                OnCreateMeetingIdFailedCallback?.Invoke(task.Exception.Message);
+                OnCreateMeetingIdFailedCallback?.Invoke(task.Exception.InnerException.Message);
                 yield break;
             }
             _meetingActivity?.CreateMeetingId(task.Result, token, OnCreateMeeting);
@@ -195,7 +197,7 @@ namespace live.videosdk
         private IEnumerator JoinMeetingIdCoroutine(string token, string meetingId, string name, bool micEnabled, bool camEnabled, string participantId = null)
         {
             string meetingUri = CombinePath(_customMeetingUri, meetingId);
-            var task = _apiCaller.CallApiPost(meetingUri, token);
+            var task = _apiCaller.CallApi(meetingUri, token,"");
             while (!task.IsCompleted)
             {
                 yield return null; // Wait for the task to complete
@@ -206,7 +208,7 @@ namespace live.videosdk
                 yield break;
                 
             }
-            _meetingActivity?.JoinMeeting(token, task.Result, name, micEnabled, camEnabled, participantId);
+            _meetingActivity?.JoinMeeting(token, task.Result, name, micEnabled, camEnabled, participantId,_packageVersion);
         }
 
         public void Leave()
@@ -226,9 +228,10 @@ namespace live.videosdk
 
 
         #region NativeCallBacks
-        private void OnMeetingJoined(string meetingId, string Id, string name, bool isLocal)
+        private void OnMeetingJoined(string meetingId, string Id, string name, bool isLocal, bool enabledLogs, string logEndPoint, string jwtKey, string peerId, string sessionId)
         {
             MeetingID = meetingId;
+            _videoSdkDto.Initialize(sessionId,jwtKey,meetingId,peerId,enabledLogs,logEndPoint,_packageVersion);
             OnPraticipantJoin(Id, name, isLocal);
         }
         private void OnMeetingLeft(string Id, string name, bool isLocal)
@@ -251,7 +254,7 @@ namespace live.videosdk
                 return;
             }
             var participantData = new Participant(Id, name, isLocal);
-            _participantsDict[Id] = UserFactory.Create(participantData,MeetingControllFactory.Create());
+            _participantsDict[Id] = UserFactory.Create(participantData,MeetingControllFactory.Create(_videoSdkDto));
 
             RunOnUnityMainThread(() =>
             {

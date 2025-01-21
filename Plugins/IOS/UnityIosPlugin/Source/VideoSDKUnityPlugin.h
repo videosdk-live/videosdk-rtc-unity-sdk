@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-void OnMeetingJoined(const char* meetingId, const char* id, const char* name);
+void OnMeetingJoined(const char* meetingId, const char* id, const char* name, bool enabledLogs, const char* logEndPoint, const char* jwtKey, const char* peerId, const char* sessionId);
 void OnMeetingLeft(const char* id, const char* name);
 void OnParticipantJoined(const char* id, const char* name);
 void OnParticipantLeft(const char* id, const char* name);
@@ -23,6 +23,8 @@ void OnVideoFrameReceived(const char* id, const unsigned char* data, int length)
 void OnExternalCallStarted();
 void OnExternalCallRinging();
 void OnExternalCallHangup();
+
+void OnAudioDeviceChanged(const char* selectedDevice, const char* deviceList);
 
 #ifdef __cplusplus
 }

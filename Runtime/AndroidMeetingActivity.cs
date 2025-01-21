@@ -13,10 +13,11 @@ namespace live.videosdk
         private AndroidJavaClass _pluginClass;
         private AndroidJavaObject _currentActivity;
         private IMeetingCallback _meetCallback;
-
-        public AndroidMeetingActivity(IMeetingCallback meetCallback)
+        private IVideoSDKDTO _videoSdkDto;
+        public AndroidMeetingActivity(IMeetingCallback meetCallback, IVideoSDKDTO videoSdkDto)
         {
             _meetCallback = meetCallback;
+            _videoSdkDto = videoSdkDto;
             using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
             {
                 _currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
@@ -26,12 +27,12 @@ namespace live.videosdk
 
         #region meet-events
         // Public methods to subscribe and unsubscribe to events
-        public void SubscribeToMeetingJoined(Action<string, string, string, bool> callback)
+        public void SubscribeToMeetingJoined(Action<string, string, string, bool, bool, string, string, string, string> callback)
         {
             _meetCallback.SubscribeToMeetingJoined(callback);
         }
 
-        public void UnsubscribeFromMeetingJoined(Action<string, string, string, bool> callback)
+        public void UnsubscribeFromMeetingJoined(Action<string, string, string, bool, bool, string, string, string, string> callback)
         {
             _meetCallback.UnsubscribeFromMeetingJoined(callback);
         }
@@ -125,15 +126,15 @@ namespace live.videosdk
 
         }
        
-        public void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId)
+        public void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId,string packageVersion)
         {
             try
             {
                 JObject result = JObject.Parse(jsonResponse);
-
                 var meetingId = result["meetingId"].ToString();
-               
-                _pluginClass.CallStatic("joinMeeting", _currentActivity, token, meetingId, name, micEnable, camEnable, participantId);
+                string platform ="Unity-"+Application.platform.ToString();
+                _pluginClass.CallStatic("joinMeeting", _currentActivity, token, meetingId, name, micEnable, camEnable, participantId,packageVersion, platform.ToLower());
+                _videoSdkDto.SendDTO("INFO", $"JoinMeeting:- MeetingId:{meetingId}");
             }
             catch(Exception ex)
             {
@@ -145,6 +146,7 @@ namespace live.videosdk
         public void LeaveMeeting()
         {
             _pluginClass.CallStatic("leave");
+            _videoSdkDto.SendDTO("INFO", $"LeaveMeeting");
         }
 
     }
