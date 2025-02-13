@@ -79,11 +79,26 @@ namespace live.videosdk
             }
         }
 
+        [SerializeField] bool flipTexture = false;
+        public bool FlipTexture
+        {
+            get => flipTexture;
+            set
+            {
+                if (flipTexture != value)
+                {
+                    flipTexture = value;
+                    Flip(value);
+                }
+            }
+        }
+
         private void Awake()
         {
             _renderer = GetComponentInChildren<Renderer>();
             _rawImage = GetComponentInChildren<RawImage>();
             _videoTexture = new Texture2D(720, 480, TextureFormat.RGBA32, false);
+            Flip(FlipTexture);
         }
 
         public void SetVideoSurfaceType(VideoSurfaceType type)
@@ -116,12 +131,14 @@ namespace live.videosdk
         {
             SetVideoSurfaceType(VideoSurfaceType.RawImage);
             this._rawImage = rawImage;
+            Flip(FlipTexture);
         }
 
         public void SetVideoRenderer(Renderer renderer)
         {
             SetVideoSurfaceType(VideoSurfaceType.Renderer);
             this._renderer = renderer;
+            Flip(FlipTexture);
         }
 
         private void RemoveTexture()
@@ -142,6 +159,18 @@ namespace live.videosdk
                     }
                 case VideoSurfaceType.None:
                     break;
+            }
+        }
+
+        private void Flip(bool status)
+        {
+            if (_rawImage != null)
+            {
+                _rawImage.rectTransform.localScale = status? new Vector3(-1, 1, 1): new Vector3(1, 1, 1);
+            }
+            if (_renderer != null)
+            {
+                _renderer.material.mainTextureScale = status ? new Vector2(-1, 1) : new Vector2(1, 1);
             }
         }
 

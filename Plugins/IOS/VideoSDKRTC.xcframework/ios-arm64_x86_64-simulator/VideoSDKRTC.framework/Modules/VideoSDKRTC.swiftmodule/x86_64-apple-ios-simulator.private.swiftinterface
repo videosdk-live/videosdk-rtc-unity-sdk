@@ -4663,7 +4663,7 @@ extension VideoSDKRTC.Meeting {
   public func stopHLS()
   public func startTranscription(config: VideoSDKRTC.TranscriptionConfig? = nil)
   public func stopTranscription()
-  public func changeMode(_ mode: VideoSDKRTC.Mode)
+  public func changeMode(_ mode: VideoSDKRTC.Mode) async
   @available(iOS 13.0.0, *)
   public func enableScreenShare() async
   @available(iOS 13.0.0, *)
@@ -4761,7 +4761,13 @@ public enum MeetingState : Swift.String {
   }
 }
 public enum Mode : Swift.String {
-  case CONFERENCE, VIEWER
+  @available(*, deprecated, message: "Use SEND_AND_RECV instead.")
+  case CONFERENCE
+  @available(*, deprecated, message: "Use SIGNALLING_ONLY instead.")
+  case VIEWER
+  case SEND_AND_RECV
+  case SIGNALLING_ONLY
+  case RECV_ONLY
   public init?(rawValue: Swift.String)
   public typealias RawValue = Swift.String
   public var rawValue: Swift.String {
@@ -5996,6 +6002,8 @@ extension VideoSDKRTC.Participant {
   public func addStream(_ stream: VideoSDKRTC.MediaStream)
   @discardableResult
   public func removeStream(_ streamId: Swift.String) -> VideoSDKRTC.MediaStream?
+  public func pausedConsumer(_ streamId: Swift.String)
+  public func resumedConsumer(_ streamId: Swift.String)
   public func removeAllStreams()
   public func setQuality(_ quality: VideoSDKRTC.VideoQuality)
   public func pin(_ peerId: Swift.String = "", _ pinType: VideoSDKRTC.PinType = .SHARE_AND_CAM)
@@ -6012,10 +6020,14 @@ extension VideoSDKRTC.Participant {
 public protocol ParticipantEventListener {
   func onStreamEnabled(_ stream: VideoSDKRTC.MediaStream, forParticipant participant: VideoSDKRTC.Participant)
   func onStreamDisabled(_ stream: VideoSDKRTC.MediaStream, forParticipant participant: VideoSDKRTC.Participant)
+  func onStreamPaused(_ stream: VideoSDKRTC.MediaStream, forParticipant participant: VideoSDKRTC.Participant)
+  func onStreamResumed(_ stream: VideoSDKRTC.MediaStream, forParticipant participant: VideoSDKRTC.Participant)
 }
 extension VideoSDKRTC.ParticipantEventListener {
   public func onStreamEnabled(_ stream: VideoSDKRTC.MediaStream, forParticipant participant: VideoSDKRTC.Participant)
   public func onStreamDisabled(_ stream: VideoSDKRTC.MediaStream, forParticipant participant: VideoSDKRTC.Participant)
+  public func onStreamPaused(_ stream: VideoSDKRTC.MediaStream, forParticipant participant: VideoSDKRTC.Participant)
+  public func onStreamResumed(_ stream: VideoSDKRTC.MediaStream, forParticipant participant: VideoSDKRTC.Participant)
 }
 public enum PinType : Swift.String {
   case SHARE_AND_CAM, CAM, SHARE
@@ -8656,7 +8668,7 @@ public enum VideoQuality : Swift.String, Swift.CaseIterable {
 }
 @_hasMissingDesignatedInitializers final public class VideoSDK {
   public static func config(token: Swift.String)
-  public static func initMeeting(meetingId: Swift.String, participantId: Swift.String = "", participantName: Swift.String = "Guest", micEnabled: Swift.Bool = true, webcamEnabled: Swift.Bool = true, customCameraVideoStream: VideoSDKRTC.CustomRTCMediaStream? = nil, customAudioTrack: VideoSDKRTC.CustomRTCMediaStream? = nil, multiStream: Swift.Bool? = true, mode: VideoSDKRTC.Mode? = .CONFERENCE, preferredProtocol: VideoSDKRTC.PreferredProtocol? = PreferredProtocol.UDP_OVER_TCP, signalingBaseUrl: Swift.String? = nil, metaData: [Swift.String : Any]? = [:]) -> VideoSDKRTC.Meeting
+  public static func initMeeting(meetingId: Swift.String, participantId: Swift.String = "", participantName: Swift.String = "Guest", micEnabled: Swift.Bool = true, webcamEnabled: Swift.Bool = true, customCameraVideoStream: VideoSDKRTC.CustomRTCMediaStream? = nil, customAudioTrack: VideoSDKRTC.CustomRTCMediaStream? = nil, multiStream: Swift.Bool? = true, mode: VideoSDKRTC.Mode? = .SEND_AND_RECV, preferredProtocol: VideoSDKRTC.PreferredProtocol? = PreferredProtocol.UDP_OVER_TCP, signalingBaseUrl: Swift.String? = nil, metaData: [Swift.String : Any]? = [:]) -> VideoSDKRTC.Meeting
   public static func createCameraVideoTrack(encoderConfig: VideoSDKRTC.CustomVideoTrackConfig? = .h360p_w640p, facingMode: AVFoundation.AVCaptureDevice.Position? = .front, multiStream: Swift.Bool? = true, codec: VideoSDKRTC.PreferredCodec? = .VP8) throws -> VideoSDKRTC.CustomRTCMediaStream?
   public static func createAudioTrack(noiseConfig: VideoSDKRTC.noiseConfig?) throws -> VideoSDKRTC.CustomRTCMediaStream?
   @objc deinit

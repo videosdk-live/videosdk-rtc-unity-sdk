@@ -252,7 +252,7 @@ namespace live.videosdk
             _meetingActivity?.LeaveMeeting();
         }
 
-        public void SetVideoEncoderConfig(VideoEncoderConfig config)
+        private void SetVideoEncoderConfig(VideoEncoderConfig config)
         {
             _meetingActivity?.SetVideoEncoderConfig(config.ToString());
         }
@@ -435,7 +435,9 @@ namespace live.videosdk
         FAILED,
         DISCONNECTED,
         CLOSING,
-        CLOSED
+        CLOSED,
+        CANCELLED, 
+        RECONNECTING
     }
 
 }

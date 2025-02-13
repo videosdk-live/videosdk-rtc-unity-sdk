@@ -500,33 +500,39 @@ extension VideoSDKHelper: ParticipantEventListener {
             guard let self = self,
                   let participant = weakParticipant,
                   renderer != nil else { return }
+            
             DispatchQueue.global(qos: .userInitiated).async {
                 autoreleasepool {
-                    // Process only every other frame to reduce memory pressure
                     if frame.timeStampNs % 2 != 0 {
                         return
                     }
                     
-                    guard let i420Buffer = frame.buffer as? RTCI420Buffer else { return }
+                    var pixelBuffer: CVPixelBuffer?
+                    
+                    if let i420Buffer = frame.buffer as? RTCI420Buffer {
+                        pixelBuffer = self.createPixelBuffer(from: i420Buffer)
+                    } else if let cvPixelBuffer = frame.buffer as? RTCCVPixelBuffer {
+                        pixelBuffer = cvPixelBuffer.pixelBuffer
+                    }
+                    
+                    guard let finalPixelBuffer = pixelBuffer else {
+                        return
+                    }
                     
                     autoreleasepool {
-                        guard let pixelBuffer = self.createPixelBuffer(from: i420Buffer) else { return }
+                        guard let imageData = self.compressFrame(pixelBuffer: finalPixelBuffer) else {
+                            return
+                        }
                         
-                        autoreleasepool {
-                            guard let imageData = self.compressFrame(pixelBuffer: pixelBuffer) else { return }
-                            
-                            DispatchQueue.main.async { [weak self] in
-                                guard self != nil else { return }
-                                if let idPtr = (participant.id as NSString).utf8String {
-                                    imageData.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
-                                        let bytePtr = bytes.baseAddress!.assumingMemoryBound(to: UInt8.self)
-                                        OnVideoFrameReceived(idPtr, bytePtr, Int32(imageData.count))
-                                    }
+                        DispatchQueue.main.async { [weak self] in
+                            guard self != nil else { return }
+                            if let idPtr = (participant.id as NSString).utf8String {
+                                imageData.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
+                                    let bytePtr = bytes.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                                    OnVideoFrameReceived(idPtr, bytePtr, Int32(imageData.count))
                                 }
                             }
                         }
-                        
-                        CVPixelBufferUnlockBaseAddress(pixelBuffer, [])
                     }
                 }
             }
@@ -544,12 +550,10 @@ extension VideoSDKHelper: ParticipantEventListener {
             let scale = 0.75
             let scaledExtent = ciImage.extent.applying(CGAffineTransform(scaleX: scale, y: scale))
             
-            let flippedImage = ciImage.transformed(by: CGAffineTransform(scaleX: -scale, y: scale))
-                                    .transformed(by: CGAffineTransform(translationX: ciImage.extent.width * scale, y: 0))
-            
-            guard let cgImage = ciContext.createCGImage(flippedImage, from: scaledExtent,
+            guard let cgImage = ciContext.createCGImage(ciImage, from: scaledExtent,
                                                       format: .RGBA8,
                                                       colorSpace: CGColorSpaceCreateDeviceRGB()) else {
+                print("Failed to create CGImage")
                 return nil
             }
             
