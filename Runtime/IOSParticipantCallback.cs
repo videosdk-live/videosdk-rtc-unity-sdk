@@ -26,12 +26,14 @@ namespace live.videosdk
 
         static IOSParticipantCallback()
         {
-            RegisterUserCallbacks(OnStreamEnabled, OnStreamDisabled, OnVideoFrameReceived);
+            RegisterUserCallbacks(OnStreamEnabled, OnStreamDisabled, OnVideoFrameReceived,OnStreamPaused ,OnStreamResumed);
         }
 
-        private static event Action<string,string> OnStreamEnabledCallback;
-        private static event Action<string,string> OnStreamDisabledCallback;
-        private static event Action<string,byte[]> OnVideoFrameReceivedCallback;
+        private event Action<string,string> OnStreamEnabledCallback;
+        private event Action<string,string> OnStreamDisabledCallback;
+        private event Action<string,byte[]> OnVideoFrameReceivedCallback;
+        private event Action<string,string> OnStreamPausedCallback;
+        private event Action<string,string> OnStreamResumedCallback;
 
         public void SubscribeToStreamEnabled(Action<string,string> callback)
         {
@@ -61,39 +63,75 @@ namespace live.videosdk
             OnVideoFrameReceivedCallback -= callback;
         }
 
+        public void SubscribeToStreamPaused(Action<string,string> callback)
+        {
+            OnStreamPausedCallback += callback;
+        }
+
+        public void UnsubscribeFromStreamPaused(Action<string,string> callback)
+        {
+            OnStreamPausedCallback -= callback;
+        }
+
+        public void SubscribeToStreamResumed(Action<string,string> callback)
+        {
+            OnStreamResumedCallback += callback;
+        }
+
+        public void UnsubscribeFromStreamResumed(Action<string,string> callback)
+        {
+            OnStreamResumedCallback -= callback;
+        }
+
+
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnStreamEnabledDelegate(string Id, string data);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnStreamDisabledDelegate(string Id, string data);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnVideoFrameReceivedDelegate(string Id, IntPtr data, int length);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnStreamPausedDelegate(string Id, string kind);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnStreamResumedDelegate(string Id, string kind);
 
         // Bind the delegates to native functions
         [DllImport("__Internal")]
         private static extern void RegisterUserCallbacks(
             OnStreamEnabledDelegate onStreamEnabled,
             OnStreamDisabledDelegate onStreamDisabled,
-            OnVideoFrameReceivedDelegate onVideoFrameReceived
+            OnVideoFrameReceivedDelegate onVideoFrameReceived,
+            OnStreamPausedDelegate onStreamPaused,
+            OnStreamResumedDelegate onStreamResumed
         );
 
         [AOT.MonoPInvokeCallback(typeof(OnStreamEnabledDelegate))]
         private static void OnStreamEnabled(string id,string jsonString)
         {
-            OnStreamEnabledCallback?.Invoke(id,jsonString);
+            Instance.OnStreamEnabledCallback?.Invoke(id,jsonString);
         }
         [AOT.MonoPInvokeCallback(typeof(OnStreamEnabledDelegate))]
         private static void OnStreamDisabled(string id, string jsonString)
         {
-            OnStreamDisabledCallback?.Invoke(id, jsonString);
+            Instance.OnStreamDisabledCallback?.Invoke(id, jsonString);
         }
         [AOT.MonoPInvokeCallback(typeof(OnVideoFrameReceivedDelegate))]
         private static void OnVideoFrameReceived(string id, IntPtr data, int length)
         {
             byte[] frameBytes = new byte[length];
             Marshal.Copy(data, frameBytes, 0, length);
-            OnVideoFrameReceivedCallback?.Invoke(id, frameBytes);
+            Instance.OnVideoFrameReceivedCallback?.Invoke(id, frameBytes);
         }
-
+        [AOT.MonoPInvokeCallback(typeof(OnStreamResumedDelegate))]
+        private static void OnStreamResumed(string id, string kind)
+        {
+            Instance.OnStreamResumedCallback?.Invoke(id,kind);
+        }
+        [AOT.MonoPInvokeCallback(typeof(OnStreamPausedDelegate))]
+        private static void OnStreamPaused(string id, string kind)
+        {
+            Instance.OnStreamPausedCallback?.Invoke(id,kind);
+        }
 
     }
 #endif

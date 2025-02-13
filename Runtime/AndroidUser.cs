@@ -18,8 +18,11 @@ namespace live.videosdk
         public event Action<string> OnStreamEnabledCallaback;
         public event Action<string> OnStreamDisabledCallaback;
         public event Action OnParticipantLeftCallback;
+        public event Action<string> OnStreamPausedCallaback;
+        public event Action<string> OnStreamResumedCallaback;
         private IMeetingControlls _meetControlls;
-        public AndroidUser(Participant participantData, IMeetingControlls meetControlls)
+        private IVideoSDKDTO _videoSdkDto;
+        public AndroidUser(IParticipant participantData, IMeetingControlls meetControlls,IVideoSDKDTO videoSDK)
         {
             if (participantData != null)
             {
@@ -27,6 +30,7 @@ namespace live.videosdk
                 ParticipantId = participantData.ParticipantId;
                 ParticipantName = participantData.Name;
                 _meetControlls = meetControlls;
+                _videoSdkDto = videoSDK;
                 RegiesterCallBack();
             }
 
@@ -48,6 +52,7 @@ namespace live.videosdk
 
         public override void OnStreamEnabled(string kind)
         {
+            _videoSdkDto.SendDTO("INFO", $"StreamEnabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
             if (kind.ToLower().Equals("video"))
             {
                 CamEnabled = true;
@@ -64,6 +69,7 @@ namespace live.videosdk
 
         public override void OnStreamDisabled(string kind)
         {
+            _videoSdkDto.SendDTO("INFO", $"StreamDisabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName} ");
             if (kind.ToLower().Equals("video"))
             {
                 CamEnabled = false;
@@ -96,6 +102,23 @@ namespace live.videosdk
             }
            
         }
+        public override void OnStreamPaused(string kind)
+        {
+            _videoSdkDto.SendDTO("INFO", $"StreamResumed:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
+            RunOnUnityMainThread(() =>
+            {
+                OnStreamResumedCallaback?.Invoke(kind);
+            });
+        }
+        public override void OnStreamResumed(string kind)
+        {
+            _videoSdkDto.SendDTO("INFO", $"StreamPaused:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
+            RunOnUnityMainThread(() =>
+            {
+                OnStreamPausedCallaback?.Invoke(kind);
+            });
+        }
+
 
         #region CallToNative
         public void ToggleWebCam(bool status)
@@ -137,7 +160,7 @@ namespace live.videosdk
             _meetControlls.ResumeStream(ParticipantId, kind);
         }
 
-        #endregion
+    #endregion
 
 
         // Utility to run actions on the Unity main thread safely
@@ -158,6 +181,7 @@ namespace live.videosdk
             }
         }
 
+        
     }
 #endif
 }

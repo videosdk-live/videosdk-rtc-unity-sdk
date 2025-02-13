@@ -14,6 +14,8 @@ namespace live.videosdk
         event Action<string> OnStreamEnabledCallaback;
         event Action<string> OnStreamDisabledCallaback;
         event Action OnParticipantLeftCallback;
+        event Action<string> OnStreamPausedCallaback;
+        event Action<string> OnStreamResumedCallaback;
 
         void ToggleMic(bool status);
         void ToggleWebCam(bool status);

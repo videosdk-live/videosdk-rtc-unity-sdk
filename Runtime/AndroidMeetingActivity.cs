@@ -14,6 +14,7 @@ namespace live.videosdk
         private AndroidJavaObject _currentActivity;
         private IMeetingCallback _meetCallback;
         private IVideoSDKDTO _videoSdkDto;
+        private AndroidJavaObject _applicationContext;
         public AndroidMeetingActivity(IMeetingCallback meetCallback, IVideoSDKDTO videoSdkDto)
         {
             _meetCallback = meetCallback;
@@ -21,8 +22,10 @@ namespace live.videosdk
             using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
             {
                 _currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+                _applicationContext = _currentActivity.Call<AndroidJavaObject>("getApplicationContext");
                 _pluginClass = new AndroidJavaClass(Meeting.packageName);
             }
+
         }
 
         #region meet-events
@@ -107,6 +110,46 @@ namespace live.videosdk
             _meetCallback.UnsubscribeFromFetchAudioDevice(callback);
         }
 
+        public void SubscribeToSpeakerChanged(Action<string> callback)
+        {
+            _meetCallback.SubscribeToSpeakerChanged(callback);
+        }
+
+        public void UnsubscribeFromSpeakerChanged(Action<string> callback)
+        {
+            _meetCallback.UnsubscribeFromSpeakerChanged(callback);
+        }
+
+        public void SubscribeToExternalCallRinging(Action callback)
+        {
+            _meetCallback.SubscribeToExternalCallRinging(callback);
+        }
+
+        public void UnsubscribeFromExternalCallRinging(Action callback)
+        {
+            _meetCallback.UnsubscribeFromExternalCallRinging(callback);
+        }
+
+        public void SubscribeToExternalCallStarted(Action callback)
+        {
+            _meetCallback.SubscribeToExternalCallStarted(callback);
+        }
+
+        public void UnsubscribeFromExternalCallStarted(Action callback)
+        {
+            _meetCallback.UnsubscribeFromExternalCallStarted(callback);
+        }
+
+        public void SubscribeToExternalCallHangup(Action callback)
+        {
+            _meetCallback.SubscribeToExternalCallHangup(callback);
+        }
+
+        public void UnsubscribeFromExternalCallHangup(Action callback)
+        {
+            _meetCallback.UnsubscribeFromExternalCallHangup(callback);
+        }
+
         #endregion
 
         public void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess)
@@ -133,7 +176,7 @@ namespace live.videosdk
                 JObject result = JObject.Parse(jsonResponse);
                 var meetingId = result["meetingId"].ToString();
                 string platform ="Unity-"+Application.platform.ToString();
-                _pluginClass.CallStatic("joinMeeting", _currentActivity, token, meetingId, name, micEnable, camEnable, participantId,packageVersion, platform.ToLower());
+                _pluginClass.CallStatic("joinMeeting", _currentActivity, token, meetingId, name, micEnable, camEnable, participantId,packageVersion, platform);
                 _videoSdkDto.SendDTO("INFO", $"JoinMeeting:- MeetingId:{meetingId}");
             }
             catch(Exception ex)
@@ -149,6 +192,12 @@ namespace live.videosdk
             _videoSdkDto.SendDTO("INFO", $"LeaveMeeting");
         }
 
+        public void SetVideoEncoderConfig(string videoConfig)
+        {
+            _pluginClass.CallStatic("setVideoEncoderConfig",videoConfig, _applicationContext);
+            _videoSdkDto.SendDTO("INFO", $"SetVideoEncoderConfig config: {videoConfig}");
+        }
+      
     }
 
 #endif

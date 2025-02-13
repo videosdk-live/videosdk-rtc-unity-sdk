@@ -10,13 +10,15 @@ namespace live.videosdk
     public sealed class VideoSurface : MonoBehaviour
     {
         private IUser _participant;
-        private Renderer objectRenderer;
-        private RawImage uiImage;
+        private Renderer _renderer;
+        private RawImage _rawImage;
         private Texture2D _videoTexture;
         private VideoSurfaceType _rendertype;
 
         public event Action<string> OnStreamEnableCallback;
         public event Action<string> OnStreamDisableCallback;
+        public event Action<string> OnStreamPausedCallback;
+        public event Action<string> OnStreamResumedCallback;
 
         public string Id
         {
@@ -79,8 +81,8 @@ namespace live.videosdk
 
         private void Awake()
         {
-            objectRenderer = GetComponentInChildren<Renderer>();
-            uiImage = GetComponentInChildren<RawImage>();
+            _renderer = GetComponentInChildren<Renderer>();
+            _rawImage = GetComponentInChildren<RawImage>();
             _videoTexture = new Texture2D(720, 480, TextureFormat.RGBA32, false);
         }
 
@@ -89,24 +91,39 @@ namespace live.videosdk
             _rendertype = type;
         }
 
-        private void SetTexture(Texture2D texture)
+        public void SetTexture(Texture2D texture)
         {
             switch (_rendertype)
             {
                 case VideoSurfaceType.RawImage:
                     {
                         // Assign the texture to the UI RawImage
-                        uiImage.texture = texture;
+                        _rawImage.texture = texture;
                         break;
                     }
                 case VideoSurfaceType.Renderer:
                     {
                         // Assign the texture to the 3D object's material
-                        objectRenderer.material.mainTexture = texture;
+                        _renderer.material.mainTexture = texture;
                         break;
                     }
+                case VideoSurfaceType.None:
+                    break;
             }
         }
+
+        public void SetVideoRenderer(RawImage rawImage)
+        {
+            SetVideoSurfaceType(VideoSurfaceType.RawImage);
+            this._rawImage = rawImage;
+        }
+
+        public void SetVideoRenderer(Renderer renderer)
+        {
+            SetVideoSurfaceType(VideoSurfaceType.Renderer);
+            this._renderer = renderer;
+        }
+
         private void RemoveTexture()
         {
             switch (_rendertype)
@@ -114,15 +131,17 @@ namespace live.videosdk
                 case VideoSurfaceType.RawImage:
                     {
                         // Assign the texture to the UI RawImage
-                        uiImage.texture = null;
+                        _rawImage.texture = null;
                         break;
                     }
                 case VideoSurfaceType.Renderer:
                     {
                         // Assign the texture to the 3D object's material
-                        objectRenderer.material.mainTexture = null;
+                        _renderer.material.mainTexture = null;
                         break;
                     }
+                case VideoSurfaceType.None:
+                    break;
             }
         }
 
@@ -161,6 +180,8 @@ namespace live.videosdk
             _participant.OnStreamDisabledCallaback += OnStreamDisabled;
             _participant.OnStreamEnabledCallaback += OnStreamEnabled;
             _participant.OnParticipantLeftCallback += OnParticipantLeft;
+            _participant.OnStreamPausedCallaback +=OnStreamPaused;
+            _participant.OnStreamResumedCallaback +=OnStreamResumed;
             RegisterVideoFrameCallbacks();
         }
 
@@ -170,6 +191,8 @@ namespace live.videosdk
             _participant.OnStreamDisabledCallaback -= OnStreamDisabled;
             _participant.OnStreamEnabledCallaback -= OnStreamEnabled;
             _participant.OnParticipantLeftCallback -= OnParticipantLeft;
+            _participant.OnStreamPausedCallaback -= OnStreamPaused;
+            _participant.OnStreamResumedCallaback -= OnStreamResumed;
             UnRegisterVideoFrameCallbacks();
         }
 
@@ -203,6 +226,15 @@ namespace live.videosdk
             }
 
             OnStreamDisableCallback?.Invoke(kind);
+        }
+
+        private void OnStreamPaused(string kind)
+        {
+            OnStreamPausedCallback?.Invoke(kind);
+        }
+        private void OnStreamResumed(string kind)
+        {
+            OnStreamResumedCallback?.Invoke(kind);
         }
 
         private void OnVideoFrameReceived(byte[] videoStream)
@@ -290,6 +322,7 @@ namespace live.videosdk
 
     public enum VideoSurfaceType
     {
+        None,
         RawImage,
         Renderer
     }

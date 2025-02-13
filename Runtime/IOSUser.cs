@@ -16,8 +16,11 @@ namespace live.videosdk
         public event Action<string> OnStreamEnabledCallaback;
         public event Action<string> OnStreamDisabledCallaback;
         public event Action OnParticipantLeftCallback;
+        public event Action<string> OnStreamPausedCallaback;
+        public event Action<string> OnStreamResumedCallaback;
         private IMeetingControlls _meetControlls;
-        public IOSUser(Participant participantData, IMeetingControlls meetControlls)
+        private IVideoSDKDTO _videoSdkDto;
+        public IOSUser(IParticipant participantData, IMeetingControlls meetControlls,IVideoSDKDTO videoSDK)
         {
             if (participantData != null)
             {
@@ -25,6 +28,7 @@ namespace live.videosdk
                 ParticipantId = participantData.ParticipantId;
                 ParticipantName = participantData.Name;
                 _meetControlls = meetControlls;
+                _videoSdkDto = videoSDK;
                 RegiesterCallBacks();
             }
 
@@ -35,6 +39,8 @@ namespace live.videosdk
             IOSParticipantCallback.Instance.SubscribeToStreamEnabled(OnStreamEnable);
             IOSParticipantCallback.Instance.SubscribeToStreamDisabled(OnStreamDisable);
             IOSParticipantCallback.Instance.SubscribeToFrameReceived(OnVideoFrameReceive);
+            IOSParticipantCallback.Instance.SubscribeToStreamPaused(OnStreamPaused);
+            IOSParticipantCallback.Instance.SubscribeToStreamResumed(OnStreamResumed);
         }
 
         private void UnRegisterCallBacks()
@@ -42,6 +48,8 @@ namespace live.videosdk
             IOSParticipantCallback.Instance.UnsubscribeFromStreamEnabled(OnStreamEnable);
             IOSParticipantCallback.Instance.UnsubscribeFromStreamDisabled(OnStreamDisable);
             IOSParticipantCallback.Instance.UnsubscribeFromFrameReceived(OnVideoFrameReceive);
+            IOSParticipantCallback.Instance.UnsubscribeFromStreamPaused(OnStreamPaused);
+            IOSParticipantCallback.Instance.UnsubscribeFromStreamResumed(OnStreamResumed);
         }
 
         public void OnParticipantLeft()
@@ -54,6 +62,7 @@ namespace live.videosdk
         private void OnStreamEnable(string id,string kind)
         {
             if (!id.Equals(ParticipantId)) return;
+            _videoSdkDto.SendDTO("INFO", $"StreamEnabled:- Kind: {kind} Id: {id} ParticipantName: {ParticipantName}");
             if (kind.ToLower().Equals("video"))
             {
                 CamEnabled = true;
@@ -71,6 +80,7 @@ namespace live.videosdk
         private void OnStreamDisable(string id, string kind)
         {
             if (!id.Equals(ParticipantId)) return;
+            _videoSdkDto.SendDTO("INFO", $"StreamDisable:- Kind: {kind} Id: {id} ParticipantName: {ParticipantName}");
             if (kind.ToLower().Equals("video"))
             {
                 CamEnabled = false;
@@ -105,6 +115,27 @@ namespace live.videosdk
             }
 
         }
+
+        private void OnStreamResumed(string id, string kind)
+        {
+            if (!id.Equals(ParticipantId)) return;
+            _videoSdkDto.SendDTO("INFO", $"StreamResumed:- Kind: {kind} Id: {id} ParticipantName: {ParticipantName}");
+            RunOnUnityMainThread(() =>
+            {
+                OnStreamResumedCallaback?.Invoke(kind);
+            });
+        }
+
+        private void OnStreamPaused(string id, string kind)
+        {
+            if (!id.Equals(ParticipantId)) return;
+             _videoSdkDto.SendDTO("INFO", $"StreamPaused:- Kind: {kind} Id: {id} ParticipantName: {ParticipantName}");
+            RunOnUnityMainThread(() =>
+            {
+                OnStreamPausedCallaback?.Invoke(kind);
+            });
+        }
+
 
         public void RunOnUnityMainThread(Action action)
         {
@@ -155,7 +186,7 @@ namespace live.videosdk
         }
 
 
-        #endregion
+    #endregion
 
     }
 

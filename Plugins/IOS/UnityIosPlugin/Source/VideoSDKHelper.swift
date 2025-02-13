@@ -34,6 +34,12 @@ func OnStreamEnabled(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<CChar>)
 @_silgen_name("OnStreamDisabled")
 func OnStreamDisabled(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<CChar>)
 
+@_silgen_name("OnStreamPaused")
+func OnStreamPaused(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<CChar>)
+
+@_silgen_name("OnStreamResumed")
+func OnStreamResumed(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<CChar>)
+
 @_silgen_name("OnVideoFrameReceived")
 func OnVideoFrameReceived(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<UInt8>, _ length: Int32)
 
@@ -48,6 +54,9 @@ func OnExternalCallHangup()
 
 @_silgen_name("OnAudioDeviceChanged")
 func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: UnsafePointer<CChar>)
+
+@_silgen_name("OnSpeakerChanged")
+func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
 
 @available(iOS 14.0, *)
 @objc public class VideoSDKHelper: NSObject {
@@ -69,9 +78,12 @@ func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: 
     
     private let callObserver = CXCallObserver()
     private var selectedAudioDevice: String?
+    private var encoderConfig: String = "h90p_w160p"
     
     override init() {
         super.init()
+        VideoSDK.getAudioPermission()
+        VideoSDK.getVideoPermission()
         setupCallMonitoring()
         setupAudioRouteMonitoring()
     }
@@ -89,18 +101,17 @@ func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: 
         )
     }
     
-    @objc public func joinMeeting(token: String, 
-                                 meetingId: String, 
-                                 participantName: String, 
-                                 micEnabled: Bool, 
-                                 webCamEnabled: Bool, 
+    @objc public func joinMeeting(token: String,
+                                 meetingId: String,
+                                 participantName: String,
+                                 micEnabled: Bool,
+                                 webCamEnabled: Bool,
                                  participantId: String? = nil,
                                  sdkName: String? = nil,
                                  sdkVersion: String? = nil) {
         VideoSDK.config(token: token)
         
         let customVideoTrack = webCamEnabled ? createCustomVideoTrack() : nil
-        
         self.meeting = VideoSDK.initMeeting(
             meetingId: meetingId,
             participantId: participantId ?? "",
@@ -136,8 +147,12 @@ func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: 
             // error callback
             return
         }
+        if status == self.webCamEnabled {
+            return
+        }
         if status {
-            meeting.enableWebcam()
+            let customVideoTrack = self.createCustomVideoTrack()
+            meeting.enableWebcam(customVideoStream: customVideoTrack)
             self.webCamEnabled = true
         } else {
             meeting.disableWebcam()
@@ -148,6 +163,9 @@ func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: 
     @objc public func toggleMic(status: Bool) {
         guard let meeting = meeting else {
             // error callback
+            return
+        }
+        if status == self.micEnabled {
             return
         }
         if status {
@@ -238,6 +256,15 @@ func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: 
         meeting?.switchWebcam()
     }
     
+    @objc public func setVideoEncoderConfig(config : String) {
+        self.encoderConfig = config
+        guard let meeting = meeting else {
+            return
+        }
+        self.toggleWebCam(status: false)
+        self.toggleMic(status: true)
+    }
+    
     private func participantToJson(_ participant: Participant) -> [String: Any] {
         return [
             "id": participant.id,
@@ -271,9 +298,9 @@ extension VideoSDKHelper: MeetingEventListener {
             
             let enabledLogs = attributes["enabledLogs"] as? Bool ?? false
             
-            OnMeetingJoined(meetingIdPtr, 
-                           idPtr, 
-                           namePtr, 
+            OnMeetingJoined(meetingIdPtr,
+                           idPtr,
+                           namePtr,
                            enabledLogs,
                            logEndPointPtr,
                            jwtKeyPtr,
@@ -330,6 +357,14 @@ extension VideoSDKHelper: MeetingEventListener {
             OnError(errorPtr)
         }
     }
+    
+    public func onSpeakerChanged(participantId: String?) {
+        if let participantId = participantId {
+            if let idpPtr = (participantId as NSString).utf8String {
+                OnSpeakerChanged(idpPtr)
+            }
+        }
+    }
 
    @objc private func handleAudioRouteChange(notification: Notification) {
        guard let userInfo = notification.userInfo,
@@ -348,6 +383,7 @@ extension VideoSDKHelper: MeetingEventListener {
            if let devicePtr = (currentDevice as NSString).utf8String,
               let listPtr = (deviceListString as NSString).utf8String {
 //               OnAudioDeviceChanged(devicePtr, listPtr)
+//               print(currentDevice, deviceList)
            }
        default:
            break
@@ -359,20 +395,30 @@ extension VideoSDKHelper: MeetingEventListener {
 extension VideoSDKHelper: ParticipantEventListener {
     
     public func onStreamEnabled(_ stream: MediaStream, forParticipant participant: Participant) {
+        var kind: String = ""
         if stream.kind == .state(value: .video) {
+            kind = "video"
             if participant.isLocal {
                 self.webCamEnabled = true
             }
+            if let idPtr = (participant.id as NSString).utf8String,
+               let dataPtr = (kind as NSString).utf8String {
+                OnStreamEnabled(idPtr, dataPtr)
+            }
             HandleVideoStream(videoTrack: stream.track as? RTCVideoTrack, participant: participant)
         } else if stream.kind == .state(value: .audio) {
+            kind = "audio"
             if participant.isLocal {
                 self.micEnabled = true
             }
-            
             if let idPtr = (participant.id as NSString).utf8String,
-               let dataPtr = ("audio" as NSString).utf8String {
+               let dataPtr = (kind as NSString).utf8String {
                 OnStreamEnabled(idPtr, dataPtr)
             }
+        }
+        
+        if !participant.isLocal {
+            self.pauseStream(participantId: participant.id, kind: "audio")
         }
     }
     
@@ -386,7 +432,6 @@ extension VideoSDKHelper: ParticipantEventListener {
         }
         
         var kind: String = ""
-        let participantJSON = participantToJson(participant)
         
         if stream.kind == .state(value: .video) {
             kind = "video"
@@ -409,6 +454,35 @@ extension VideoSDKHelper: ParticipantEventListener {
         }
     }
     
+    public func onStreamPaused(_ stream: MediaStream, forParticipant participant: Participant) {
+        var kind: String = ""
+        if stream.kind == .state(value: .video) {
+            kind = "video"
+        } else if stream.kind == .state(value: .audio) {
+            kind = "audio"
+        }
+        
+        if let idPtr = (participant.id as NSString).utf8String,
+        let dataPtr = (kind as NSString).utf8String {
+            OnStreamPaused(idPtr, dataPtr)
+        }
+    }
+    
+    public func onStreamResumed(_ stream: MediaStream, forParticipant participant: Participant) {
+        var kind: String = ""
+        
+        if stream.kind == .state(value: .video) {
+            kind = "video"
+        } else if stream.kind == .state(value: .audio) {
+            kind = "audio"
+        }
+        
+        if let idPtr = (participant.id as NSString).utf8String,
+        let dataPtr = (kind as NSString).utf8String {
+            OnStreamResumed(idPtr, dataPtr)
+        }
+    }
+    
     func HandleVideoStream(videoTrack: RTCVideoTrack? = nil, participant: Participant) {
         guard let videoTrack = videoTrack else { return }
         
@@ -426,7 +500,6 @@ extension VideoSDKHelper: ParticipantEventListener {
             guard let self = self,
                   let participant = weakParticipant,
                   renderer != nil else { return }
-            
             DispatchQueue.global(qos: .userInitiated).async {
                 autoreleasepool {
                     // Process only every other frame to reduce memory pressure
@@ -468,12 +541,13 @@ extension VideoSDKHelper: ParticipantEventListener {
         return autoreleasepool { () -> Data? in
             let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
             
-            // Scale down the image to reduce memory usage
-            let scale = 0.75 // Reduce to 75% of original size
+            let scale = 0.75
             let scaledExtent = ciImage.extent.applying(CGAffineTransform(scaleX: scale, y: scale))
-            let scaledImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
             
-            guard let cgImage = ciContext.createCGImage(scaledImage, from: scaledExtent,
+            let flippedImage = ciImage.transformed(by: CGAffineTransform(scaleX: -scale, y: scale))
+                                    .transformed(by: CGAffineTransform(translationX: ciImage.extent.width * scale, y: 0))
+            
+            guard let cgImage = ciContext.createCGImage(flippedImage, from: scaledExtent,
                                                       format: .RGBA8,
                                                       colorSpace: CGColorSpaceCreateDeviceRGB()) else {
                 return nil
@@ -559,7 +633,18 @@ extension VideoSDKHelper: ParticipantEventListener {
     }
     
     func createCustomVideoTrack() -> CustomRTCMediaStream? {
-        guard let customVideoTrack = try? VideoSDK.createCameraVideoTrack(encoderConfig: .h720p_w1280p, facingMode: .front, multiStream: true) else {
+        var VideoencoderConfig: CustomVideoTrackConfig
+        switch encoderConfig {
+        case "h480p_w640p":
+            VideoencoderConfig = .h480p_w640p
+        case "h720p_w960p":
+            VideoencoderConfig = .h720p_w1280p
+        case "h480p_w720p":
+            VideoencoderConfig = .h480p_w640p
+        default:
+            VideoencoderConfig = .h90p_w160p
+        }
+        guard let customVideoTrack = try? VideoSDK.createCameraVideoTrack(encoderConfig: VideoencoderConfig, facingMode: .front, multiStream: true) else {
             return nil
         }
         return customVideoTrack
@@ -570,7 +655,6 @@ extension VideoSDKHelper: ParticipantEventListener {
 extension VideoSDKHelper: CXCallObserverDelegate {
     
     public func callObserver(_ callObserver: CXCallObserver, callChanged call: CXCall) {
-        // Only handle incoming calls
         if !call.isOutgoing {
             if call.hasEnded {
                 isCallConnected = false
