@@ -201,10 +201,12 @@ func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
         switch kind.lowercased() {
         case "video":
             if let videostream = participant.streams.first(where: { $1.kind == .state(value: .video) })?.value {
+                print("pause stream", participantId)
                 videostream.pause()
             }
         case "audio":
             if let audiostream = participant.streams.first(where: { $1.kind == .state(value: .audio) })?.value {
+                print("pause stream", participantId)
                 audiostream.pause()
             }
         case "share":
@@ -225,10 +227,12 @@ func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
         switch kind.lowercased() {
         case "video":
             if let videostream = participant.streams.first(where: { $1.kind == .state(value: .video) })?.value {
+                print("resume stream", participantId)
                 videostream.resume()
             }
         case "audio":
             if let audiostream = participant.streams.first(where: { $1.kind == .state(value: .audio) })?.value {
+                print("resume stream", participantId)
                 audiostream.resume()
             }
         case "share":
@@ -262,7 +266,7 @@ func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
             return
         }
         self.toggleWebCam(status: false)
-        self.toggleMic(status: true)
+        self.toggleWebCam(status: true)
     }
     
     private func participantToJson(_ participant: Participant) -> [String: Any] {
@@ -416,10 +420,6 @@ extension VideoSDKHelper: ParticipantEventListener {
                 OnStreamEnabled(idPtr, dataPtr)
             }
         }
-        
-        if !participant.isLocal {
-            self.pauseStream(participantId: participant.id, kind: "audio")
-        }
     }
     
     public func onStreamDisabled(_ stream: MediaStream, forParticipant participant: Participant) {
@@ -455,6 +455,7 @@ extension VideoSDKHelper: ParticipantEventListener {
     }
     
     public func onStreamPaused(_ stream: MediaStream, forParticipant participant: Participant) {
+        print("on stream paused", participant.id)
         var kind: String = ""
         if stream.kind == .state(value: .video) {
             kind = "video"
@@ -469,6 +470,7 @@ extension VideoSDKHelper: ParticipantEventListener {
     }
     
     public func onStreamResumed(_ stream: MediaStream, forParticipant participant: Participant) {
+        print("on stream resumed", participant.id)
         var kind: String = ""
         
         if stream.kind == .state(value: .video) {

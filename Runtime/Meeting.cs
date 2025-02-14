@@ -25,7 +25,7 @@ namespace live.videosdk
         private string[] _avaliableAudioDevicesArray;
         private IMeetingActivity _meetingActivity;
         private IVideoSDKDTO _videoSdkDto;
-        private const string _packageVersion = "1.2.3";
+        private const string _packageVersion = "1.2.4";
         #region Callbacks For User
         public event Action<string> OnCreateMeetingIdCallback;
         public event Action<string> OnCreateMeetingIdFailedCallback;
