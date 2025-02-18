@@ -113,6 +113,10 @@ void setVideoEncoderConfig(const char* config) {
     [[VideoSDKHelper shared] setVideoEncoderConfigWithConfig:configStr];
 }
 
+void setSpeakerMute(bool status) {
+    [[VideoSDKHelper shared] setSpeakerMuteWithStatus:status];
+}
+
 #pragma mark - Register Callback function
 
 void RegisterMeetingCallbacks(

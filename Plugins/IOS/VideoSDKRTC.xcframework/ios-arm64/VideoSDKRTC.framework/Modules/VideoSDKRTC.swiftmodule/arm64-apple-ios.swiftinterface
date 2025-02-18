@@ -1147,7 +1147,7 @@ public struct Google_Protobuf_ExtensionRangeOptions : VideoSDKRTC.ExtensibleMess
       get
       set
     }
-    public var hasFullName: Swift.Bool {
+    public var haMediasoupllName: Swift.Bool {
       get
     }
     public mutating func clearFullName()

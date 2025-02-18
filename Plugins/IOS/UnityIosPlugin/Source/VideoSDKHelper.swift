@@ -68,6 +68,7 @@ func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
     var webCamEnabled: Bool = false
     var micEnabled: Bool = false
     private var isCallConnected = false
+    private var isSpeakerMute = false
     
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
     private let compressionSettings: [CFString: Any] = [
@@ -201,12 +202,10 @@ func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
         switch kind.lowercased() {
         case "video":
             if let videostream = participant.streams.first(where: { $1.kind == .state(value: .video) })?.value {
-                print("pause stream", participantId)
                 videostream.pause()
             }
         case "audio":
             if let audiostream = participant.streams.first(where: { $1.kind == .state(value: .audio) })?.value {
-                print("pause stream", participantId)
                 audiostream.pause()
             }
         case "share":
@@ -227,12 +226,10 @@ func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
         switch kind.lowercased() {
         case "video":
             if let videostream = participant.streams.first(where: { $1.kind == .state(value: .video) })?.value {
-                print("resume stream", participantId)
                 videostream.resume()
             }
         case "audio":
             if let audiostream = participant.streams.first(where: { $1.kind == .state(value: .audio) })?.value {
-                print("resume stream", participantId)
                 audiostream.resume()
             }
         case "share":
@@ -267,6 +264,21 @@ func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
         }
         self.toggleWebCam(status: false)
         self.toggleWebCam(status: true)
+    }
+    
+    @objc public func setSpeakerMute(status: Bool) {
+        self.isSpeakerMute = status
+        guard let meeting = meeting else { return }
+        
+        for participant in participants {
+            if !participant.isLocal {
+                if status {
+                    self.pauseStream(participantId: participant.id, kind: "audio")
+                } else {
+                    self.resumeStream(participantId: participant.id, kind: "audio")
+                }
+            }
+        }
     }
     
     private func participantToJson(_ participant: Participant) -> [String: Any] {
@@ -455,7 +467,6 @@ extension VideoSDKHelper: ParticipantEventListener {
     }
     
     public func onStreamPaused(_ stream: MediaStream, forParticipant participant: Participant) {
-        print("on stream paused", participant.id)
         var kind: String = ""
         if stream.kind == .state(value: .video) {
             kind = "video"
@@ -470,7 +481,6 @@ extension VideoSDKHelper: ParticipantEventListener {
     }
     
     public func onStreamResumed(_ stream: MediaStream, forParticipant participant: Participant) {
-        print("on stream resumed", participant.id)
         var kind: String = ""
         
         if stream.kind == .state(value: .video) {
@@ -502,7 +512,6 @@ extension VideoSDKHelper: ParticipantEventListener {
             guard let self = self,
                   let participant = weakParticipant,
                   renderer != nil else { return }
-            
             DispatchQueue.global(qos: .userInitiated).async {
                 autoreleasepool {
                     if frame.timeStampNs % 2 != 0 {
@@ -522,7 +531,7 @@ extension VideoSDKHelper: ParticipantEventListener {
                     }
                     
                     autoreleasepool {
-                        guard let imageData = self.compressFrame(pixelBuffer: finalPixelBuffer) else {
+                        guard let imageData = self.compressFrame(pixelBuffer: finalPixelBuffer, isLocal: participant.isLocal) else {
                             return
                         }
                         
@@ -543,13 +552,14 @@ extension VideoSDKHelper: ParticipantEventListener {
         videoTrack.add(renderer)
     }
 
-    func compressFrame(pixelBuffer: CVPixelBuffer) -> Data? {
+
+    func compressFrame(pixelBuffer: CVPixelBuffer, isLocal: Bool) -> Data? {
         CVPixelBufferLockBaseAddress(pixelBuffer, [])
         
         return autoreleasepool { () -> Data? in
             let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-            
             let scale = 0.75
+            
             let scaledExtent = ciImage.extent.applying(CGAffineTransform(scaleX: scale, y: scale))
             
             guard let cgImage = ciContext.createCGImage(ciImage, from: scaledExtent,

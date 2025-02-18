@@ -25,7 +25,7 @@ namespace live.videosdk
         private string[] _avaliableAudioDevicesArray;
         private IMeetingActivity _meetingActivity;
         private IVideoSDKDTO _videoSdkDto;
-        private const string _packageVersion = "2.0.0";
+        private const string _packageVersion = "2.0.1";
         #region Callbacks For User
         public event Action<string> OnCreateMeetingIdCallback;
         public event Action<string> OnCreateMeetingIdFailedCallback;
@@ -250,6 +250,11 @@ namespace live.videosdk
         public void Leave()
         {
             _meetingActivity?.LeaveMeeting();
+        }
+
+        public void SetSpeakerMute(bool mute)
+        {
+            _meetingActivity?.SetSpeakerMute(mute);
         }
 
         private void SetVideoEncoderConfig(VideoEncoderConfig config)

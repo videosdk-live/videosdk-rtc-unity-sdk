@@ -28,7 +28,7 @@ namespace live.videosdk
 
         }
 
-        #region meet-events
+    #region meet-events
         // Public methods to subscribe and unsubscribe to events
         public void SubscribeToMeetingJoined(Action<string, string, string, bool, bool, string, string, string, string> callback)
         {
@@ -150,7 +150,7 @@ namespace live.videosdk
             _meetCallback.UnsubscribeFromExternalCallHangup(callback);
         }
 
-        #endregion
+    #endregion
 
         public void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess)
         {
@@ -191,6 +191,13 @@ namespace live.videosdk
             _pluginClass.CallStatic("leave");
             _videoSdkDto.SendDTO("INFO", $"LeaveMeeting");
         }
+
+        public void SetSpeakerMute(bool status)
+        {
+            _pluginClass.CallStatic("setSpeakerMute",status);
+            _videoSdkDto.SendDTO("INFO", $"SetSpeakerMute: {status}");
+        }
+
 
         public void SetVideoEncoderConfig(string videoConfig)
         {

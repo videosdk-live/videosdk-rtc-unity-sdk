@@ -30,43 +30,43 @@
 		</data>
 		<key>Modules/VideoSDKRTC.swiftmodule/arm64-apple-ios-simulator.abi.json</key>
 		<data>
-		K0xWxA8ahQfzCA62Gd7jjFnhbeY=
+		mvd6mk2lKNTBSjsgK4dEX/a51h8=
 		</data>
 		<key>Modules/VideoSDKRTC.swiftmodule/arm64-apple-ios-simulator.private.swiftinterface</key>
 		<data>
-		j8r/8LRI7DursHR7XZeutK9Xm/c=
+		KO/fk+7TBdAiJbSBza9t5p6tPcA=
 		</data>
 		<key>Modules/VideoSDKRTC.swiftmodule/arm64-apple-ios-simulator.swiftdoc</key>
 		<data>
-		AOSoVVk9c6CI/E65rVy9ku7LGeM=
+		T9wjbgI5nX2labykWFkSyLsSdrI=
 		</data>
 		<key>Modules/VideoSDKRTC.swiftmodule/arm64-apple-ios-simulator.swiftinterface</key>
 		<data>
-		j8r/8LRI7DursHR7XZeutK9Xm/c=
+		KO/fk+7TBdAiJbSBza9t5p6tPcA=
 		</data>
 		<key>Modules/VideoSDKRTC.swiftmodule/arm64-apple-ios-simulator.swiftmodule</key>
 		<data>
-		8hWD5oZP0+toDUAa3g4tGS6od+8=
+		At605dgU+TxpGw/ir3RkrUTdf2I=
 		</data>
 		<key>Modules/VideoSDKRTC.swiftmodule/x86_64-apple-ios-simulator.abi.json</key>
 		<data>
-		K0xWxA8ahQfzCA62Gd7jjFnhbeY=
+		mvd6mk2lKNTBSjsgK4dEX/a51h8=
 		</data>
 		<key>Modules/VideoSDKRTC.swiftmodule/x86_64-apple-ios-simulator.private.swiftinterface</key>
 		<data>
-		PAfePtprMy+eJNywAp14fK6e0x4=
+		0oD25BRdiG/APahx5s7nvx8OjFQ=
 		</data>
 		<key>Modules/VideoSDKRTC.swiftmodule/x86_64-apple-ios-simulator.swiftdoc</key>
 		<data>
-		im7wCfTuM7oVSlT7i29NrkVZHpY=
+		9AQSVHnC9NsVedHo2jVe7DQFMlc=
 		</data>
 		<key>Modules/VideoSDKRTC.swiftmodule/x86_64-apple-ios-simulator.swiftinterface</key>
 		<data>
-		PAfePtprMy+eJNywAp14fK6e0x4=
+		0oD25BRdiG/APahx5s7nvx8OjFQ=
 		</data>
 		<key>Modules/VideoSDKRTC.swiftmodule/x86_64-apple-ios-simulator.swiftmodule</key>
 		<data>
-		VixEbg015vqSv0NNXJcqRp10OUw=
+		V229If0tWyv63J+cLaH1hrsSMLs=
 		</data>
 		<key>Modules/module.modulemap</key>
 		<data>
@@ -114,70 +114,70 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			eZIniiQxkcgrrSVxnHrDnZbuo8Td8nJECEUu4vJWxFQ=
+			30wv0bQI34ac7Re0AaOi7XQhdK/qFSXmP1jFEehDTls=
 			</data>
 		</dict>
 		<key>Modules/VideoSDKRTC.swiftmodule/arm64-apple-ios-simulator.private.swiftinterface</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			/GNM9iPLSpM4cGuVux5WFhY/tw7i1EHXn4KUsw5YBBI=
+			/1Z+LBiBG4bqIl12ND2F2ebVuO891tNWJ+XHIJJKIvk=
 			</data>
 		</dict>
 		<key>Modules/VideoSDKRTC.swiftmodule/arm64-apple-ios-simulator.swiftdoc</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			Rc+SDb8aBb8BGe7XqeGJRnWi2SVT6l5XGq9gs3Z7AbE=
+			jcOZf+7ketY867PXtzlGKLwliB9kkvilzNLQyuA32Ro=
 			</data>
 		</dict>
 		<key>Modules/VideoSDKRTC.swiftmodule/arm64-apple-ios-simulator.swiftinterface</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			/GNM9iPLSpM4cGuVux5WFhY/tw7i1EHXn4KUsw5YBBI=
+			/1Z+LBiBG4bqIl12ND2F2ebVuO891tNWJ+XHIJJKIvk=
 			</data>
 		</dict>
 		<key>Modules/VideoSDKRTC.swiftmodule/arm64-apple-ios-simulator.swiftmodule</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			ZUg3+NmEaZ98HDCzWF1V/VV391F6oPgCfR3/RTubk7Y=
+			Jx3Awd0XDpl/b0nU1pyCoMOjfkxm6a3hRPBBuKHRPrQ=
 			</data>
 		</dict>
 		<key>Modules/VideoSDKRTC.swiftmodule/x86_64-apple-ios-simulator.abi.json</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			eZIniiQxkcgrrSVxnHrDnZbuo8Td8nJECEUu4vJWxFQ=
+			30wv0bQI34ac7Re0AaOi7XQhdK/qFSXmP1jFEehDTls=
 			</data>
 		</dict>
 		<key>Modules/VideoSDKRTC.swiftmodule/x86_64-apple-ios-simulator.private.swiftinterface</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			8K9OVJBOddkS0412h02pphpYb6qusC63tnJAbicF10s=
+			sgrd4gZ6XddJWi1r4n2WamGaalOmISmTi1aKf7WHysc=
 			</data>
 		</dict>
 		<key>Modules/VideoSDKRTC.swiftmodule/x86_64-apple-ios-simulator.swiftdoc</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			RXz4rnmTju0OoXJaQxtoIb7bmAnZ4+SqtrH6a6tXggg=
+			4FJcQvTNjOCgbGGF+U1Aum5u5EMfLCn7Ae6WTpqiHek=
 			</data>
 		</dict>
 		<key>Modules/VideoSDKRTC.swiftmodule/x86_64-apple-ios-simulator.swiftinterface</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			8K9OVJBOddkS0412h02pphpYb6qusC63tnJAbicF10s=
+			sgrd4gZ6XddJWi1r4n2WamGaalOmISmTi1aKf7WHysc=
 			</data>
 		</dict>
 		<key>Modules/VideoSDKRTC.swiftmodule/x86_64-apple-ios-simulator.swiftmodule</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			4Tw63m7T+wHuxKlm0JIPIORAnyJ3L1l5pFgTBn8jGkg=
+			od4RhpwnazOshSYt9ENfASyJ8Y6XnzwSHil9oQkGm/4=
 			</data>
 		</dict>
 		<key>Modules/module.modulemap</key>
