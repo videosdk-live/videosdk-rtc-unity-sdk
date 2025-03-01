@@ -4,6 +4,8 @@ namespace live.videosdk
 {
     internal interface IMeetingCallback
     {
+        void SubscribeToPausedAllStreams(Action<string> callback);
+        void SubscribeToResumedAllStreams(Action<string> callback);
         void SubscribeToAudioDeviceChanged(Action<string, string[]> callback);
         void SubscribeToError(Action<string> callback);
         void SubscribeToExternalCallHangup(Action callback);
@@ -28,6 +30,8 @@ namespace live.videosdk
         void UnsubscribeFromParticipantJoined(Action<string, string, bool> callback);
         void UnsubscribeFromParticipantLeft(Action<string, string, bool> callback);
         void UnsubscribeFromSpeakerChanged(Action<string> callback);
+        void UnsubscribeFromPausedAllStreams(Action<string> callback);
+        void UnsubscribeFromResumedAllStreams(Action<string> callback);
     }
 
 //#endif

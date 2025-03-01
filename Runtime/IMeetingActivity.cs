@@ -22,6 +22,8 @@ namespace live.videosdk
         void SubscribeToParticipantJoined(Action<string, string, bool> callback);
         void SubscribeToParticipantLeft(Action<string, string, bool> callback);
         void SubscribeToSpeakerChanged(Action<string> callback);
+        void SubscribeToResumedAllStreams(Action<string> callback);
+        void SubscribeToPausedAllStreams(Action<string> callback);
         void UnsubscribeFromAudioDeviceChanged(Action<string, string[]> callback);
         void UnsubscribeFromError(Action<string> callback);
         void UnsubscribeFromExternalCallHangup(Action callback);
@@ -34,6 +36,9 @@ namespace live.videosdk
         void UnsubscribeFromParticipantJoined(Action<string, string, bool> callback);
         void UnsubscribeFromParticipantLeft(Action<string, string, bool> callback);
         void UnsubscribeFromSpeakerChanged(Action<string> callback);
+        void UnsubscribeFromPausedAllStreams(Action<string> callback);
+        void UnsubscribeFromResumedAllStreams(Action<string> callback);
+       
     }
 }
 

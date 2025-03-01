@@ -19,14 +19,14 @@ typedef void (*OnMeetingStateChangedDelegate)(const char* state);
 typedef void (*OnErrorDelegate)(const char* error);
 typedef void (*OnStreamEnabledDelegate)(const char* id, const char* data);
 typedef void (*OnStreamDisabledDelegate)(const char* id, const char* data);
-typedef void (*OnStreamPausedDelegate)(const char* id, const char* data);
-typedef void (*OnStreamResumedDelegate)(const char* id, const char* data);
 typedef void (*OnVideoFrameReceivedDelegate)(const char* id, const unsigned char* data, int length);
 typedef void (*OnExternalCallStartedDelegate)();
 typedef void (*OnExternalCallRingingDelegate)();
 typedef void (*OnExternalCallHangupDelegate)();
 typedef void (*OnAudioDeviceChangedDelegate)(const char* selectedDevice, const char* deviceList);
 typedef void (*OnSpeakerChangedDelegate)(const char* id);
+typedef void (*onPausedAllStreamsDelegate)(const char* kind);
+typedef void (*onResumedAllStreamsDelegate)(const char* kind);
 
 static OnMeetingJoinedDelegate onMeetingJoinedCallback = NULL;
 static OnMeetingLeftDelegate onMeetingLeftCallback = NULL;
@@ -36,14 +36,14 @@ static OnMeetingStateChangedDelegate onMeetingStateChangedCallback = NULL;
 static OnErrorDelegate onErrorCallback = NULL;
 static OnStreamEnabledDelegate onStreamEnabledCallback = NULL;
 static OnStreamDisabledDelegate onStreamDisabledCallback = NULL;
-static OnStreamPausedDelegate onStreamPausedCallback = NULL;
-static OnStreamResumedDelegate onStreamResumedCallback = NULL;
 static OnVideoFrameReceivedDelegate onVideoFrameReceivedCallback = NULL;
 static OnExternalCallStartedDelegate onExternalCallStartedCallback = NULL;
 static OnExternalCallRingingDelegate onExternalCallRingingCallback = NULL;
 static OnExternalCallHangupDelegate onExternalCallHangupCallback = NULL;
 static OnAudioDeviceChangedDelegate onAudioDeviceChangedCallback = NULL;
 static OnSpeakerChangedDelegate onSpeakerChangedCallback = NULL;
+static onPausedAllStreamsDelegate onPausedAllStremsCallback = NULL;
+static onResumedAllStreamsDelegate onResumedAllStremsCallback = NULL;
 
 #pragma mark - Functions called by unity
 
@@ -79,6 +79,16 @@ void toggleWebCam(bool status, const char* Id) {
 void toggleMic(bool status, const char* Id) {
     NSString *participantId = [NSString stringWithUTF8String:Id];
     [[VideoSDKHelper shared] toggleMicWithStatus:status];
+}
+
+void pauseAllStreams(const char* kind) {
+    NSString *kindStr = [NSString stringWithUTF8String:kind];
+    [[VideoSDKHelper shared] pauseAllStreamsWithKind:kindStr];
+}
+
+void resumeAllStreams(const char* kind) {
+    NSString *kindStr = [NSString stringWithUTF8String:kind];
+    [[VideoSDKHelper shared] resumeAllStreamsWithKind:kindStr];
 }
 
 void pauseStream(const char* participantId, const char* kind) {
@@ -129,7 +139,9 @@ void RegisterMeetingCallbacks(
     OnSpeakerChangedDelegate onSpeakerChanged,
     OnExternalCallStartedDelegate onExternalCallStarted,
     OnExternalCallRingingDelegate onExternalCallRinging,
-    OnExternalCallHangupDelegate onExternalCallHangup) {
+    OnExternalCallHangupDelegate onExternalCallHangup,
+    onPausedAllStreamsDelegate onPausedAllStrems,
+    onResumedAllStreamsDelegate onResumedAllStrems) {
     
     onMeetingJoinedCallback = onMeetingJoined;
     onMeetingLeftCallback = onMeetingLeft;
@@ -141,7 +153,8 @@ void RegisterMeetingCallbacks(
     onExternalCallStartedCallback = onExternalCallStarted;
     onExternalCallRingingCallback = onExternalCallRinging;
     onExternalCallHangupCallback = onExternalCallHangup;
-    
+    onPausedAllStremsCallback = onPausedAllStrems;
+    onResumedAllStremsCallback = onResumedAllStrems;
     
     NSLog(@"Meeting callbacks registered successfully");
 }
@@ -149,15 +162,11 @@ void RegisterMeetingCallbacks(
 void RegisterUserCallbacks(
     OnStreamEnabledDelegate onStreamEnabled,
     OnStreamDisabledDelegate onStreamDisabled,
-    OnVideoFrameReceivedDelegate onVideoFrameReceived,
-    OnStreamPausedDelegate onStreamPaused,
-    OnStreamResumedDelegate onStreamResumed) {
+    OnVideoFrameReceivedDelegate onVideoFrameReceived) {
     
     onStreamEnabledCallback = onStreamEnabled;
     onStreamDisabledCallback = onStreamDisabled;
     onVideoFrameReceivedCallback = onVideoFrameReceived;
-    onStreamPausedCallback = onStreamPaused;
-    onStreamResumedCallback = onStreamResumed;
     
     NSLog(@"Stream callbacks registered successfully");
 }
@@ -224,18 +233,6 @@ void OnStreamDisabled(const char* id, const char* data) {
     }
 }
 
-void OnStreamPaused(const char* id, const char* data) {
-    if (onStreamPausedCallback) {
-        onStreamPausedCallback(id, data);
-    }
-}
-
-void OnStreamResumed(const char* id, const char* data) {
-    if (onStreamResumedCallback) {
-        onStreamResumedCallback(id, data);
-    }
-}
-
 void OnVideoFrameReceived(const char* id, const unsigned char* data, int length) {
     if (onVideoFrameReceivedCallback) {
         onVideoFrameReceivedCallback(id, data, length);
@@ -269,6 +266,18 @@ void OnAudioDeviceChanged(const char* selectedDevice, const char* deviceList) {
 void OnSpeakerChanged(const char* id) {
     if (onSpeakerChangedCallback) {
         onSpeakerChangedCallback(id);
+    }
+}
+
+void OnPausedAllStreams(const char* kind) {
+    if (onPausedAllStremsCallback) {
+        onPausedAllStremsCallback(kind);
+    }
+}
+
+void OnResumedAllStreams(const char* kind) {
+    if (onResumedAllStremsCallback) {
+        onResumedAllStremsCallback(kind);
     }
 }
 

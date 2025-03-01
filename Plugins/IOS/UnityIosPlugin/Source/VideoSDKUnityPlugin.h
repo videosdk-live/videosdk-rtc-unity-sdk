@@ -18,8 +18,6 @@ void OnError(const char* error);
 
 void OnStreamEnabled(const char* id, const char* data);
 void OnStreamDisabled(const char* id, const char* data);
-void OnStreamPaused(const char* id, const char* data);
-void OnStreamResumed(const char* id, const char* data);
 void OnVideoFrameReceived(const char* id, const unsigned char* data, int length);
 
 void OnExternalCallStarted();
@@ -28,6 +26,9 @@ void OnExternalCallHangup();
 
 void OnAudioDeviceChanged(const char* selectedDevice, const char* deviceList);
 void OnSpeakerChanged(const char* id);
+
+void OnPausedAllStreams(const char* kind);
+void OnResumedAllStreams(const char* kind);
 
 #ifdef __cplusplus
 }

@@ -149,6 +149,26 @@ namespace live.videosdk
             OnExternalCallRingingCallback -= callback;
         }
 
+        public void SubscribeToPausedAllStreams(Action<string> callback)
+        {
+            OnPausedAllStreamsCallback += callback;
+        }
+
+        public void UnsubscribeFromPausedAllStreams(Action<string> callback)
+        {
+            OnPausedAllStreamsCallback -= callback;
+        }
+
+        public void SubscribeToResumedAllStreams(Action<string> callback)
+        {
+            OnResumedAllStreamsCallback += callback;
+        }
+
+        public void UnsubscribeFromResumedAllStreams(Action<string> callback)
+        {
+            OnResumedAllStreamsCallback -= callback;
+        }
+
         private event Action<string, string, string, bool, bool , string , string , string , string > OnMeetingJoinedCallback;
         private event Action<string, string, bool> OnMeetingLeftCallback;
         private event Action<string, string, bool> OnParticipantJoinedCallback;
@@ -161,6 +181,8 @@ namespace live.videosdk
         private event Action OnExternalCallHangupCallback;
         private event Action OnExternalCallStartedCallback;
         private event Action OnExternalCallRingingCallback;
+        private event Action<string> OnPausedAllStreamsCallback;
+        private event Action<string> OnResumedAllStreamsCallback;
 
         private void OnMeetingJoined(string meetingId, string Id, string name, bool enabledLogs,string logEndPoint, string jwtKey, string peerId, string sessionId)
         {
@@ -217,6 +239,16 @@ namespace live.videosdk
         private void OnExternalCallHangup()
         {
             OnExternalCallHangupCallback?.Invoke();
+        }
+
+        private void OnPausedAllStreams(string kind)
+        {
+            OnPausedAllStreamsCallback?.Invoke(kind);
+        }
+
+        private void OnResumedAllStreams(string kind)
+        {
+            OnResumedAllStreamsCallback?.Invoke(kind);
         }
 
     }

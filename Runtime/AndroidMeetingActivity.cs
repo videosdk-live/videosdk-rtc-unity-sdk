@@ -149,8 +149,27 @@ namespace live.videosdk
         {
             _meetCallback.UnsubscribeFromExternalCallHangup(callback);
         }
+        public void SubscribeToResumedAllStreams(Action<string> callback)
+        {
+            _meetCallback.SubscribeToResumedAllStreams(callback);
+        }
 
-    #endregion
+        public void SubscribeToPausedAllStreams(Action<string> callback)
+        {
+            _meetCallback.SubscribeToPausedAllStreams(callback);
+        }
+
+        public void UnsubscribeFromPausedAllStreams(Action<string> callback)
+        {
+            _meetCallback.UnsubscribeFromPausedAllStreams(callback);
+        }
+
+        public void UnsubscribeFromResumedAllStreams(Action<string> callback)
+        {
+            _meetCallback.UnsubscribeFromResumedAllStreams(callback);
+        }
+
+        #endregion
 
         public void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess)
         {
@@ -204,7 +223,8 @@ namespace live.videosdk
             _pluginClass.CallStatic("setVideoEncoderConfig",videoConfig, _applicationContext);
             _videoSdkDto.SendDTO("INFO", $"SetVideoEncoderConfig config: {videoConfig}");
         }
-      
+
+        
     }
 
 #endif

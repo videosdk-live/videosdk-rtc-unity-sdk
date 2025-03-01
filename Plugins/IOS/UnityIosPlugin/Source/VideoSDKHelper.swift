@@ -34,12 +34,6 @@ func OnStreamEnabled(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<CChar>)
 @_silgen_name("OnStreamDisabled")
 func OnStreamDisabled(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<CChar>)
 
-@_silgen_name("OnStreamPaused")
-func OnStreamPaused(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<CChar>)
-
-@_silgen_name("OnStreamResumed")
-func OnStreamResumed(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<CChar>)
-
 @_silgen_name("OnVideoFrameReceived")
 func OnVideoFrameReceived(_ id: UnsafePointer<CChar>, _ data: UnsafePointer<UInt8>, _ length: Int32)
 
@@ -57,6 +51,12 @@ func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: 
 
 @_silgen_name("OnSpeakerChanged")
 func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
+
+@_silgen_name("OnPausedAllStreams")
+func OnPausedAllStreams(_ kind: UnsafePointer<CChar>)
+
+@_silgen_name("OnResumedAllStreams")
+func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
 
 @available(iOS 14.0, *)
 @objc public class VideoSDKHelper: NSObject {
@@ -80,13 +80,14 @@ func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
     private let callObserver = CXCallObserver()
     private var selectedAudioDevice: String?
     private var encoderConfig: String = "h90p_w160p"
+    private var meetingState: MeetingState = .DISCONNECTED
     
     override init() {
         super.init()
         VideoSDK.getAudioPermission()
         VideoSDK.getVideoPermission()
         setupCallMonitoring()
-        setupAudioRouteMonitoring()
+//        setupAudioRouteMonitoring()
     }
     
     private func setupCallMonitoring() {
@@ -151,13 +152,15 @@ func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
         if status == self.webCamEnabled {
             return
         }
-        if status {
-            let customVideoTrack = self.createCustomVideoTrack()
-            meeting.enableWebcam(customVideoStream: customVideoTrack)
-            self.webCamEnabled = true
-        } else {
-            meeting.disableWebcam()
-            self.webCamEnabled = false
+        if meetingState == .CONNECTED {
+            if status {
+                let customVideoTrack = self.createCustomVideoTrack()
+                meeting.enableWebcam(customVideoStream: customVideoTrack)
+                self.webCamEnabled = true
+            } else {
+                meeting.disableWebcam()
+                self.webCamEnabled = false
+            }
         }
     }
     
@@ -169,12 +172,14 @@ func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
         if status == self.micEnabled {
             return
         }
-        if status {
-            meeting.unmuteMic()
-            self.micEnabled = true
-        } else {
-            meeting.muteMic()
-            self.micEnabled = false
+        if meetingState == .CONNECTED {
+            if status {
+                meeting.unmuteMic()
+                self.micEnabled = true
+            } else {
+                meeting.muteMic()
+                self.micEnabled = false
+            }
         }
     }
     
@@ -193,9 +198,24 @@ func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
         return participantsData.toJSONString()
     }
     
+    @objc public func pauseAllStreams(kind: String) {
+        guard let meeting = meeting else {
+            return
+        }
+        
+        meeting.pauseAllConsumers(kind)
+    }
+    
+    @objc public func resumeAllStreams(kind: String) {
+        guard let meeting = meeting else {
+            return
+        }
+        meeting.resumeAllConsumers(kind)
+    }
+    
     @objc public func pauseStream(participantId: String, kind: String) {
-        guard let participant = participants.first(where: { $0.id == participantId }) else {
-            print("Participant not found: \(participantId)")
+        guard let participant = participants.first(where: { $0.id == participantId }), meetingState == .CONNECTED else {
+            print("Participant not found: \(participantId) or Meeting is not connected")
             return
         }
         
@@ -218,8 +238,8 @@ func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
     }
     
     @objc public func resumeStream(participantId: String, kind: String) {
-        guard let participant = participants.first(where: { $0.id == participantId }) else {
-            print("Participant not found: \(participantId)")
+        guard let participant = participants.first(where: { $0.id == participantId }), meetingState == .CONNECTED else {
+            print("Participant not found: \(participantId) or Meeting is not connected")
             return
         }
         
@@ -362,8 +382,9 @@ extension VideoSDKHelper: MeetingEventListener {
         }
     }
     
-    public func onMeetingStateChanged(_ state: MeetingState) {
-        if let statePtr = (state.rawValue as NSString).utf8String {
+    public func onMeetingStateChanged(meetingState: MeetingState) {
+        self.meetingState = meetingState
+        if let statePtr = (meetingState.rawValue as NSString).utf8String {
             OnMeetingStateChanged(statePtr)
         }
     }
@@ -379,6 +400,18 @@ extension VideoSDKHelper: MeetingEventListener {
             if let idpPtr = (participantId as NSString).utf8String {
                 OnSpeakerChanged(idpPtr)
             }
+        }
+    }
+    
+    public func onPausedAllStreams(kind: String) {
+        if let kindPtr = (kind as NSString).utf8String {
+            OnPausedAllStreams(kindPtr)
+        }
+    }
+    
+    public func onResumedAllStreams(kind: String) {
+        if let kindPtr = (kind as NSString).utf8String {
+            OnResumedAllStreams(kindPtr)
         }
     }
 
@@ -431,6 +464,10 @@ extension VideoSDKHelper: ParticipantEventListener {
                let dataPtr = (kind as NSString).utf8String {
                 OnStreamEnabled(idPtr, dataPtr)
             }
+            
+            if self.isSpeakerMute {
+                self.pauseStream(participantId: participant.id, kind: kind)
+            }
         }
     }
     
@@ -463,35 +500,6 @@ extension VideoSDKHelper: ParticipantEventListener {
                 }
                 videoRenderers.removeValue(forKey: participant.id)
             }
-        }
-    }
-    
-    public func onStreamPaused(_ stream: MediaStream, forParticipant participant: Participant) {
-        var kind: String = ""
-        if stream.kind == .state(value: .video) {
-            kind = "video"
-        } else if stream.kind == .state(value: .audio) {
-            kind = "audio"
-        }
-        
-        if let idPtr = (participant.id as NSString).utf8String,
-        let dataPtr = (kind as NSString).utf8String {
-            OnStreamPaused(idPtr, dataPtr)
-        }
-    }
-    
-    public func onStreamResumed(_ stream: MediaStream, forParticipant participant: Participant) {
-        var kind: String = ""
-        
-        if stream.kind == .state(value: .video) {
-            kind = "video"
-        } else if stream.kind == .state(value: .audio) {
-            kind = "audio"
-        }
-        
-        if let idPtr = (participant.id as NSString).utf8String,
-        let dataPtr = (kind as NSString).utf8String {
-            OnStreamResumed(idPtr, dataPtr)
         }
     }
     

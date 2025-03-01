@@ -154,6 +154,28 @@ namespace live.videosdk
             OnExternalCallRingingCallback -= callback;
         }
 
+        public void SubscribeToPausedAllStreams(Action<string> callback)
+        {
+            OnPausedAllStreamsCallback += callback;
+        }
+
+        public void UnsubscribeFromPausedAllStreams(Action<string> callback)
+        {
+            OnPausedAllStreamsCallback -= callback;
+        }
+
+        public void SubscribeToResumedAllStreams(Action<string> callback)
+        {
+            OnResumedAllStreamsCallback += callback;
+        }
+
+        public void UnsubscribeFromResumedAllStreams(Action<string> callback)
+        {
+            OnResumedAllStreamsCallback -= callback;
+        }
+
+
+
         private event Action<string, string, string, bool, bool , string , string , string , string > OnMeetingJoinedCallback;
         private event Action<string, string, bool> OnMeetingLeftCallback;
         private event Action<string, string, bool> OnParticipantJoinedCallback;
@@ -166,6 +188,8 @@ namespace live.videosdk
         private event Action OnExternalCallHangupCallback;
         private event Action OnExternalCallStartedCallback;
         private event Action OnExternalCallRingingCallback;
+        private event Action<string> OnPausedAllStreamsCallback;
+        private event Action<string> OnResumedAllStreamsCallback;
 
         // Delegate definitions
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -197,6 +221,12 @@ namespace live.videosdk
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnExternalCallRingingDelegate();
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnPausedAllStreamsDelegate(string kind);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnResumedAllStreamsDelegate(string kind);
 
         // Bind the delegates to native functions
         [DllImport("__Internal")]
@@ -271,6 +301,17 @@ namespace live.videosdk
             Instance.OnExternalCallHangupCallback?.Invoke();
         }
 
+        [AOT.MonoPInvokeCallback(typeof(OnPausedAllStreamsDelegate))]
+        private static void OnPausedAllStreams(string kind)
+        {
+            Instance.OnPausedAllStreamsCallback?.Invoke(kind);
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(OnResumedAllStreamsDelegate))]
+        private static void OnResumedAllStreams(string kind)
+        {
+            Instance.OnResumedAllStreamsCallback?.Invoke(kind);
+        }
     }
 #endif
 }

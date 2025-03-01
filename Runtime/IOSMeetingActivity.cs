@@ -141,6 +141,26 @@ namespace live.videosdk
             _meetCallback.UnsubscribeFromExternalCallHangup(callback);
         }
 
+        public void SubscribeToPausedAllStreams(Action<string> callback)
+        {
+            _meetCallback.SubscribeToPausedAllStreams(callback);
+        }
+
+        public void UnsubscribeFromPausedAllStreams(Action<string> callback)
+        {
+            _meetCallback.UnsubscribeFromPausedAllStreams(callback);
+        }
+
+        public void SubscribeToResumedAllStreams(Action<string> callback)
+        {
+            _meetCallback.SubscribeToResumedAllStreams(callback);
+        }
+
+        public void UnsubscribeFromResumedAllStreams(Action<string> callback)
+        {
+            _meetCallback.UnsubscribeFromResumedAllStreams(callback);
+        }
+
 
         #endregion
 

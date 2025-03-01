@@ -39,6 +39,9 @@ namespace live.videosdk
         public event Action OnCallRingingCallback;
         private event Action<string> OnJoinMeetingFailedCallback;
         private event Action<string, string[]> OnAudioDeviceChangedCallback;
+        public event Action<string> OnPausedAllStreamsCallback;
+        public event Action<string> OnResumedAllStreamsCallback;
+
         #endregion
 
 #if UNITY_ANDROID
@@ -142,8 +145,9 @@ namespace live.videosdk
             _meetingActivity.SubscribeToExternalCallStarted(OnExternalCallStarted);
             _meetingActivity.SubscribeToExternalCallRinging(OnExternalCallRinging);
             _meetingActivity.SubscribeToExternalCallHangup(OnExternalCallHangup);
+            _meetingActivity.SubscribeToPausedAllStreams(OnPausedAllStreams);
+            _meetingActivity.SubscribeToResumedAllStreams(OnResumedAllStreams);
         }
-
 
         private void UnRegisterMeetCallbacks()
         {
@@ -159,6 +163,8 @@ namespace live.videosdk
             _meetingActivity.UnsubscribeFromExternalCallStarted(OnExternalCallStarted);
             _meetingActivity.UnsubscribeFromExternalCallRinging(OnExternalCallRinging);
             _meetingActivity.UnsubscribeFromExternalCallHangup(OnExternalCallHangup);
+            _meetingActivity.UnsubscribeFromPausedAllStreams(OnPausedAllStreams);
+            _meetingActivity.UnsubscribeFromResumedAllStreams(OnResumedAllStreams);
         }
         #endregion
 
@@ -411,7 +417,21 @@ namespace live.videosdk
             });
         }
 
+        private void OnPausedAllStreams(string kind)
+        {
+            RunOnUnityMainThread(() =>
+            {
+                OnPausedAllStreamsCallback?.Invoke(kind);
+            });
+        }
 
+        private void OnResumedAllStreams(string kind)
+        {
+            RunOnUnityMainThread(() =>
+            {
+                OnResumedAllStreamsCallback?.Invoke(kind);
+            });
+        }
         #endregion
 
         internal static IUser GetParticipantById(string Id)
