@@ -38,7 +38,8 @@ namespace live.videosdk
         void UnsubscribeFromSpeakerChanged(Action<string> callback);
         void UnsubscribeFromPausedAllStreams(Action<string> callback);
         void UnsubscribeFromResumedAllStreams(Action<string> callback);
-       
+        void PauseAllStreams(string kind);
+        void ResumeAllStreams(string kind);
     }
 }
 

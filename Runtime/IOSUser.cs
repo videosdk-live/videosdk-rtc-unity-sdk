@@ -39,17 +39,13 @@ namespace live.videosdk
             IOSParticipantCallback.Instance.SubscribeToStreamEnabled(OnStreamEnable);
             IOSParticipantCallback.Instance.SubscribeToStreamDisabled(OnStreamDisable);
             IOSParticipantCallback.Instance.SubscribeToFrameReceived(OnVideoFrameReceive);
-            IOSParticipantCallback.Instance.SubscribeToStreamPaused(OnStreamPaused);
-            IOSParticipantCallback.Instance.SubscribeToStreamResumed(OnStreamResumed);
         }
 
         private void UnRegisterCallBacks()
         {
             IOSParticipantCallback.Instance.UnsubscribeFromStreamEnabled(OnStreamEnable);
             IOSParticipantCallback.Instance.UnsubscribeFromStreamDisabled(OnStreamDisable);
-            IOSParticipantCallback.Instance.UnsubscribeFromFrameReceived(OnVideoFrameReceive);
-            IOSParticipantCallback.Instance.UnsubscribeFromStreamPaused(OnStreamPaused);
-            IOSParticipantCallback.Instance.UnsubscribeFromStreamResumed(OnStreamResumed);
+            IOSParticipantCallback.Instance.UnsubscribeFromFrameReceived(OnVideoFrameReceive);        
         }
 
         public void OnParticipantLeft()
@@ -164,27 +160,6 @@ namespace live.videosdk
             }
             _meetControlls.ToggleMic(status, ParticipantId);
         }
-
-        public void PauseStream(string kind)
-        {
-            if (_meetControlls == null)
-            {
-                Debug.LogError("It seems you don't have active meet instance, please join meet first");
-                return;
-            }
-            _meetControlls.PauseStream(ParticipantId, kind);
-        }
-
-        public void ResumeStream(string kind)
-        {
-            if (_meetControlls == null)
-            {
-                Debug.LogError("It seems you don't have active meet instance, please join meet first");
-                return;
-            }
-            _meetControlls.ResumeStream(ParticipantId, kind);
-        }
-
 
     #endregion
 

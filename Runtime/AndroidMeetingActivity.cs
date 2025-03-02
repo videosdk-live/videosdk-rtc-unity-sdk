@@ -224,7 +224,19 @@ namespace live.videosdk
             _videoSdkDto.SendDTO("INFO", $"SetVideoEncoderConfig config: {videoConfig}");
         }
 
-        
+        public void PauseAllStreams(string kind)
+        {
+            _pluginClass.CallStatic("pauseAllStreams",kind);
+            _videoSdkDto.SendDTO("INFO", $"PauseAllStreams:- Kind:{kind}");
+        }
+
+        public void ResumeAllStreams(string kind)
+        {
+            _pluginClass.CallStatic("resumeAllStreams", kind);
+            _videoSdkDto.SendDTO("INFO", $"ResumeAllStreams:- Kind:{kind}");
+        }
+
+
     }
 
 #endif

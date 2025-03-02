@@ -263,6 +263,15 @@ namespace live.videosdk
             _meetingActivity?.SetSpeakerMute(mute);
         }
 
+        public void PauseAllStreams(StreamKind kind)
+        {
+            _meetingActivity.PauseAllStreams(kind.ToString().ToLower());
+        }
+        public void ResumeAllStreams(StreamKind kind)
+        {
+            _meetingActivity.ResumeAllStreams(kind.ToString().ToLower());
+        }
+
         private void SetVideoEncoderConfig(VideoEncoderConfig config)
         {
             _meetingActivity?.SetVideoEncoderConfig(config.ToString());
@@ -455,14 +464,16 @@ namespace live.videosdk
     public enum MeetingState
     {
         NONE,
-        CONNECTING,
-        CONNECTED,
-        FAILED,
-        DISCONNECTED,
-        CLOSING,
-        CLOSED,
-        CANCELLED, 
-        RECONNECTING
+        CONNECTING, //connection is in the process of being established
+        CONNECTED, //connection has been successfully established
+        RECONNECTING, //attempting to reconnect
+        DISCONNECTED
+    }
+
+    public enum StreamKind
+    {
+        AUDIO,
+        VIDEO
     }
 
 }

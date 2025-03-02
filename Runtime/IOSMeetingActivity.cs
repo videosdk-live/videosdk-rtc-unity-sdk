@@ -162,7 +162,7 @@ namespace live.videosdk
         }
 
 
-        #endregion
+    #endregion
 
         public void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess)
         {
@@ -216,6 +216,18 @@ namespace live.videosdk
             _videoSdkDto.SendDTO("INFO", $"SetVideoEncoderConfig config: {videoConfig}");
         }
 
+        public void PauseAllStreams(string kind)
+        {
+            pauseAllStreams(kind);
+            _videoSdkDto.SendDTO("INFO", $"PauseAllStreams:- Kind:{kind}");
+        }
+
+        public void ResumeAllStreams(string kind)
+        {
+            resumeAllStreams(kind);
+            _videoSdkDto.SendDTO("INFO", $"ResumeAllStreams:- Kind:{kind}");
+        }
+
         [DllImport("__Internal")]
         private static extern void setVideoEncoderConfig(string config);
 
@@ -227,6 +239,13 @@ namespace live.videosdk
 
         [DllImport("__Internal")]
         private static extern void setSpeakerMute(bool status);
+
+        [DllImport("__Internal")]
+        private static extern void pauseAllStreams(string kind);
+
+        [DllImport("__Internal")]
+        private static extern void resumeAllStreams(string kind);
+
 
     }
 
