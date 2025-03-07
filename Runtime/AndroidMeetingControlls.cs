@@ -23,6 +23,16 @@ namespace live.videosdk
             _videoSdkDto.SendDTO("INFO", $"ToggleMic:- status:{status} ParticipantId:{Id}");
         }
 
+        public void PauseStream(StreamKind kind, string Id)
+        {
+            _pluginClass.CallStatic("pauseStream", kind.ToString());
+            _videoSdkDto.SendDTO("INFO", $"pauseStream:- kind:{kind} ParticipantId:{Id}");
+        }
+        public void ResumeStream(StreamKind kind, string Id)
+        {
+            _pluginClass.CallStatic("pauseStream", kind);
+            _videoSdkDto.SendDTO("INFO", $"pauseStream:- kind:{kind} ParticipantId:{Id}");
+        }
     }
 
 #endif

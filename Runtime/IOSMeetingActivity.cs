@@ -204,12 +204,6 @@ namespace live.videosdk
             _videoSdkDto.SendDTO("INFO", $"LeaveMeeting");
         }
 
-        public void SetSpeakerMute(bool status)
-        {
-            setSpeakerMute(status);
-            _videoSdkDto.SendDTO("INFO", $"SetSpeakerMute: {status}");
-        }
-
         public void SetVideoEncoderConfig(string videoConfig)
         {
             setVideoEncoderConfig(videoConfig);
@@ -236,9 +230,6 @@ namespace live.videosdk
 
         [DllImport("__Internal")]
         private static extern void joinMeeting(string token, string meetingId, string name, bool micEnable, bool camEnable, string participantId, string packageVersion,string platform);
-
-        [DllImport("__Internal")]
-        private static extern void setSpeakerMute(bool status);
 
         [DllImport("__Internal")]
         private static extern void pauseAllStreams(string kind);

@@ -11,6 +11,10 @@ namespace live.videosdk
         public abstract void OnStreamEnabled(string jsonString);
 
         public abstract void OnStreamDisabled(string jsonString);
+        
+        //public abstract void OnPauseStream(string kind);
+
+        //public abstract void OnResumeStream(string kind);
 
         public abstract void OnVideoFrameReceived(string videoStream);
 

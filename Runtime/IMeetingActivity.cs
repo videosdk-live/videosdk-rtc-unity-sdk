@@ -8,7 +8,6 @@ namespace live.videosdk
         void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess);
         void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId,string packageVersion);
         void LeaveMeeting();
-        void SetSpeakerMute(bool status);
         void SetVideoEncoderConfig(string videoConfig);
         void SubscribeToAudioDeviceChanged(Action<string, string[]> callback);
         void SubscribeToError(Action<string> callback);

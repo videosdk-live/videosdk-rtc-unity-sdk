@@ -39,8 +39,8 @@ namespace live.videosdk
         public event Action OnCallRingingCallback;
         private event Action<string> OnJoinMeetingFailedCallback;
         private event Action<string, string[]> OnAudioDeviceChangedCallback;
-        public event Action<string> OnPausedAllStreamsCallback;
-        public event Action<string> OnResumedAllStreamsCallback;
+        public event Action<StreamKind> OnPausedAllStreamsCallback;
+        public event Action<StreamKind> OnResumedAllStreamsCallback;
 
         #endregion
 
@@ -258,11 +258,6 @@ namespace live.videosdk
             _meetingActivity?.LeaveMeeting();
         }
 
-        public void SetSpeakerMute(bool mute)
-        {
-            _meetingActivity?.SetSpeakerMute(mute);
-        }
-
         public void PauseAllStreams(StreamKind kind)
         {
             _meetingActivity.PauseAllStreams(kind.ToString().ToLower());
@@ -430,7 +425,10 @@ namespace live.videosdk
         {
             RunOnUnityMainThread(() =>
             {
-                OnPausedAllStreamsCallback?.Invoke(kind);
+                if (Enum.TryParse(kind, true, out StreamKind streamKind))
+                {
+                    OnPausedAllStreamsCallback?.Invoke(streamKind);
+                }
             });
         }
 
@@ -438,7 +436,10 @@ namespace live.videosdk
         {
             RunOnUnityMainThread(() =>
             {
-                OnResumedAllStreamsCallback?.Invoke(kind);
+                if (Enum.TryParse(kind, true, out StreamKind streamKind))
+                {
+                    OnResumedAllStreamsCallback?.Invoke(streamKind);
+                }
             });
         }
         #endregion

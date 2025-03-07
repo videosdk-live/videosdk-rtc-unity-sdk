@@ -25,11 +25,26 @@ namespace live.videosdk
              _videoSdkDto.SendDTO("INFO", $"ToggleMic:- status:{status} ParticipantId:{Id}");
         }
 
+        public void PauseStream(StreamKind kind, string Id)
+        {
+            pauseStream(kind.ToString(), Id);
+            _videoSdkDto.SendDTO("INFO", $"pauseStream:- kind:{kind} ParticipantId:{Id}");
+        }
+        public void ResumeStream(StreamKind kind, string Id)
+        {
+            pauseStream(kind.ToString(), Id);
+            _videoSdkDto.SendDTO("INFO", $"resumeStream:- kind:{kind} ParticipantId:{Id}");
+        }
+
 
         [DllImport("__Internal")]
         private static extern void toggleWebCam(bool status,string Id);
         [DllImport("__Internal")]
         private static extern void toggleMic(bool status,string Id);
+        [DllImport("__Internal")]
+        private static extern void pauseStream(string kind,string Id);
+        [DllImport("__Internal")]
+        private static extern void resumeStream(string kind, string Id);
 
     }
 #endif

@@ -211,12 +211,6 @@ namespace live.videosdk
             _videoSdkDto.SendDTO("INFO", $"LeaveMeeting");
         }
 
-        public void SetSpeakerMute(bool status)
-        {
-            _pluginClass.CallStatic("setSpeakerMute",status);
-            _videoSdkDto.SendDTO("INFO", $"SetSpeakerMute: {status}");
-        }
-
 
         public void SetVideoEncoderConfig(string videoConfig)
         {

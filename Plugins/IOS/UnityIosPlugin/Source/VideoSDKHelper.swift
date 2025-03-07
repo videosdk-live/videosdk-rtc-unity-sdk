@@ -94,14 +94,14 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
         callObserver.setDelegate(self, queue: nil)
     }
 
-    private func setupAudioRouteMonitoring() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleAudioRouteChange),
-            name: AVAudioSession.routeChangeNotification,
-            object: nil
-        )
-    }
+//    private func setupAudioRouteMonitoring() {
+//        NotificationCenter.default.addObserver(
+//            self,
+//            selector: #selector(handleAudioRouteChange),
+//            name: AVAudioSession.routeChangeNotification,
+//            object: nil
+//        )
+//    }
     
     @objc public func joinMeeting(token: String,
                                  meetingId: String,
@@ -415,29 +415,29 @@ extension VideoSDKHelper: MeetingEventListener {
         }
     }
 
-   @objc private func handleAudioRouteChange(notification: Notification) {
-       guard let userInfo = notification.userInfo,
-             let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
-             let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
-           return
-       }
-       
-       switch reason {
-       case .newDeviceAvailable, .oldDeviceUnavailable, .override:
-           let currentRoute = AVAudioSession.sharedInstance().currentRoute
-           let currentDevice = currentRoute.inputs.first?.portName ?? ""
-           let deviceList = VideoSDK.getAudioDevices()
-           
-           let deviceListString = deviceList.description
-           if let devicePtr = (currentDevice as NSString).utf8String,
-              let listPtr = (deviceListString as NSString).utf8String {
-//               OnAudioDeviceChanged(devicePtr, listPtr)
-//               print(currentDevice, deviceList)
-           }
-       default:
-           break
-       }
-   }
+//   @objc private func handleAudioRouteChange(notification: Notification) {
+//       guard let userInfo = notification.userInfo,
+//             let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+//             let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
+//           return
+//       }
+//       
+//       switch reason {
+//       case .newDeviceAvailable, .oldDeviceUnavailable, .override:
+//           let currentRoute = AVAudioSession.sharedInstance().currentRoute
+//           let currentDevice = currentRoute.inputs.first?.portName ?? ""
+////           let deviceList = VideoSDK.getAudioDevices()
+//           
+//           let deviceListString = deviceList.description
+//           if let devicePtr = (currentDevice as NSString).utf8String,
+//              let listPtr = (deviceListString as NSString).utf8String {
+////               OnAudioDeviceChanged(devicePtr, listPtr)
+////               print(currentDevice, deviceList)
+//           }
+//       default:
+//           break
+//       }
+//   }
 }
 
 @available(iOS 14.0, *)

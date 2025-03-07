@@ -34,7 +34,9 @@ namespace live.videosdk
           OnSpeakerChanged,
           OnExternalCallStarted,
           OnExternalCallRinging,
-          OnExternalCallHangup
+          OnExternalCallHangup,
+          OnPausedAllStreams,
+          OnResumedAllStreams
               );
         }
 
@@ -240,7 +242,9 @@ namespace live.videosdk
             OnSpeakerChangedDelegate onSpeakerChanged,
             OnExternalCallStartedDelegate onCallStarted,
             OnExternalCallRingingDelegate onCallRinging,
-            OnExternalCallHangupDelegate onCallHangup
+            OnExternalCallHangupDelegate onCallHangup,
+            OnPausedAllStreamsDelegate OnPausedAllStreams,
+            OnResumedAllStreamsDelegate OnResumedAllStreams
         );
 
         [AOT.MonoPInvokeCallback(typeof(OnMeetingJoinedDelegate))]

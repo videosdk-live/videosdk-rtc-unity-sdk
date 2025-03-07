@@ -15,11 +15,11 @@ namespace live.videosdk
         public bool CamEnabled { get; private set; }
 
         public event Action<byte[]> OnVideoFrameReceivedCallback;
-        public event Action<string> OnStreamEnabledCallaback;
-        public event Action<string> OnStreamDisabledCallaback;
+        public event Action<StreamKind> OnStreamEnabledCallaback;
+        public event Action<StreamKind> OnStreamDisabledCallaback;
         public event Action OnParticipantLeftCallback;
-        public event Action<string> OnStreamPausedCallaback;
-        public event Action<string> OnStreamResumedCallaback;
+        public event Action<StreamKind> OnStreamPausedCallaback;
+        public event Action<StreamKind> OnStreamResumedCallaback;
         private IMeetingControlls _meetControlls;
         private IVideoSDKDTO _videoSdkDto;
         public AndroidUser(IParticipant participantData, IMeetingControlls meetControlls,IVideoSDKDTO videoSDK)
@@ -63,7 +63,11 @@ namespace live.videosdk
             }
             RunOnUnityMainThread(() =>
             {
-                OnStreamEnabledCallaback?.Invoke(kind);
+                if (Enum.TryParse(kind, true, out StreamKind streamKind))
+                {
+
+                    OnStreamEnabledCallaback?.Invoke(streamKind);
+                }
             });
         }
 
@@ -80,10 +84,57 @@ namespace live.videosdk
             }
             RunOnUnityMainThread(() =>
             {
-                OnStreamDisabledCallaback?.Invoke(kind);
+                if (Enum.TryParse(kind, true, out StreamKind streamKind))
+                {
+
+                    OnStreamDisabledCallaback?.Invoke(streamKind);
+                }
             });
             
         }
+
+        //public override void OnPauseStream(string kind)
+        //{
+        //    _videoSdkDto.SendDTO("INFO", $"PauseStream:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName} ");
+        //    if (kind.ToLower().Equals("video"))
+        //    {
+        //        CamEnabled = false;
+        //    }
+        //    else if (kind.ToLower().Equals("audio"))
+        //    {
+        //        MicEnabled = false;
+        //    }
+        //    RunOnUnityMainThread(() =>
+        //    {
+        //        if (Enum.TryParse(kind, true, out StreamKind streamKind))
+        //        {
+
+        //            OnStreamDisabledCallaback?.Invoke(streamKind);
+        //        }
+        //    });
+
+        //}
+        
+        //public override void OnResumeStream(string kind)
+        //{
+        //    _videoSdkDto.SendDTO("INFO", $"ResumeStream:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName} ");
+        //    if (kind.ToLower().Equals("video"))
+        //    {
+        //        CamEnabled = false;
+        //    }
+        //    else if (kind.ToLower().Equals("audio"))
+        //    {
+        //        MicEnabled = false;
+        //    }
+        //    RunOnUnityMainThread(() =>
+        //    {
+        //        if (Enum.TryParse(kind, true, out StreamKind streamKind))
+        //        {
+        //            OnStreamDisabledCallaback?.Invoke(streamKind);
+        //        }
+        //    });
+
+        //}
 
         public override void OnVideoFrameReceived(string videoStream)
         {
@@ -123,7 +174,27 @@ namespace live.videosdk
             _meetControlls.ToggleMic(status,ParticipantId);
         }
 
-    #endregion
+        public void PauseStream(StreamKind kind)
+        {
+            if (_meetControlls == null)
+            {
+                Debug.LogError("It seems you don't have active meet instance, please join meet first");
+                return;
+            }
+            _meetControlls.PauseStream(kind, ParticipantId);
+        }
+
+        public void ResumeStream(StreamKind kind)
+        {
+            if (_meetControlls == null)
+            {
+                Debug.LogError("It seems you don't have active meet instance, please join meet first");
+                return;
+            }
+            _meetControlls.ResumeStream(kind, ParticipantId);
+        }
+
+        #endregion
 
 
         // Utility to run actions on the Unity main thread safely

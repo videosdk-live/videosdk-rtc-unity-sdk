@@ -42,8 +42,8 @@ static OnExternalCallRingingDelegate onExternalCallRingingCallback = NULL;
 static OnExternalCallHangupDelegate onExternalCallHangupCallback = NULL;
 static OnAudioDeviceChangedDelegate onAudioDeviceChangedCallback = NULL;
 static OnSpeakerChangedDelegate onSpeakerChangedCallback = NULL;
-static onPausedAllStreamsDelegate onPausedAllStremsCallback = NULL;
-static onResumedAllStreamsDelegate onResumedAllStremsCallback = NULL;
+static onPausedAllStreamsDelegate onPausedAllStreamsCallback = NULL;
+static onResumedAllStreamsDelegate onResumedAllStreamsCallback = NULL;
 
 #pragma mark - Functions called by unity
 
@@ -140,8 +140,8 @@ void RegisterMeetingCallbacks(
     OnExternalCallStartedDelegate onExternalCallStarted,
     OnExternalCallRingingDelegate onExternalCallRinging,
     OnExternalCallHangupDelegate onExternalCallHangup,
-    onPausedAllStreamsDelegate onPausedAllStrems,
-    onResumedAllStreamsDelegate onResumedAllStrems) {
+    onPausedAllStreamsDelegate onPausedAllStreams,
+    onResumedAllStreamsDelegate onResumedAllStreams) {
     
     onMeetingJoinedCallback = onMeetingJoined;
     onMeetingLeftCallback = onMeetingLeft;
@@ -153,8 +153,8 @@ void RegisterMeetingCallbacks(
     onExternalCallStartedCallback = onExternalCallStarted;
     onExternalCallRingingCallback = onExternalCallRinging;
     onExternalCallHangupCallback = onExternalCallHangup;
-    onPausedAllStremsCallback = onPausedAllStrems;
-    onResumedAllStremsCallback = onResumedAllStrems;
+    onPausedAllStreamsCallback = onPausedAllStreams;
+    onResumedAllStreamsCallback = onResumedAllStreams;
     
     NSLog(@"Meeting callbacks registered successfully");
 }
@@ -270,14 +270,14 @@ void OnSpeakerChanged(const char* id) {
 }
 
 void OnPausedAllStreams(const char* kind) {
-    if (onPausedAllStremsCallback) {
-        onPausedAllStremsCallback(kind);
+    if (onPausedAllStreamsCallback) {
+        onPausedAllStreamsCallback(kind);
     }
 }
 
 void OnResumedAllStreams(const char* kind) {
-    if (onResumedAllStremsCallback) {
-        onResumedAllStremsCallback(kind);
+    if (onResumedAllStreamsCallback) {
+        onResumedAllStreamsCallback(kind);
     }
 }
 

@@ -15,10 +15,10 @@ namespace live.videosdk
         private Texture2D _videoTexture;
         private VideoSurfaceType _rendertype;
 
-        public event Action<string> OnStreamEnableCallback;
-        public event Action<string> OnStreamDisableCallback;
-        public event Action<string> OnStreamPausedCallback;
-        public event Action<string> OnStreamResumedCallback;
+        public event Action<StreamKind> OnStreamEnableCallback;
+        public event Action<StreamKind> OnStreamDisableCallback;
+        public event Action<StreamKind> OnStreamPausedCallback;
+        public event Action<StreamKind> OnStreamResumedCallback;
 
         public string Id
         {
@@ -209,8 +209,8 @@ namespace live.videosdk
             _participant.OnStreamDisabledCallaback += OnStreamDisabled;
             _participant.OnStreamEnabledCallaback += OnStreamEnabled;
             _participant.OnParticipantLeftCallback += OnParticipantLeft;
-            _participant.OnStreamPausedCallaback +=OnStreamPaused;
-            _participant.OnStreamResumedCallaback +=OnStreamResumed;
+            //_participant.OnStreamPausedCallaback +=OnStreamPaused;
+            //_participant.OnStreamResumedCallaback +=OnStreamResumed;
             RegisterVideoFrameCallbacks();
         }
 
@@ -220,8 +220,8 @@ namespace live.videosdk
             _participant.OnStreamDisabledCallaback -= OnStreamDisabled;
             _participant.OnStreamEnabledCallaback -= OnStreamEnabled;
             _participant.OnParticipantLeftCallback -= OnParticipantLeft;
-            _participant.OnStreamPausedCallaback -= OnStreamPaused;
-            _participant.OnStreamResumedCallaback -= OnStreamResumed;
+            //_participant.OnStreamPausedCallaback -= OnStreamPaused;
+            //_participant.OnStreamResumedCallaback -= OnStreamResumed;
             UnRegisterVideoFrameCallbacks();
         }
 
@@ -242,14 +242,14 @@ namespace live.videosdk
             _participant = null;
         }
 
-        private void OnStreamEnabled(string kind)
+        private void OnStreamEnabled(StreamKind kind)
         {
             OnStreamEnableCallback?.Invoke(kind);
         }
 
-        private void OnStreamDisabled(string kind)
+        private void OnStreamDisabled(StreamKind kind)
         {
-            if (kind.Equals("video"))
+            if (kind == StreamKind.VIDEO)
             {
                 RemoveTexture();
             }
@@ -257,13 +257,13 @@ namespace live.videosdk
             OnStreamDisableCallback?.Invoke(kind);
         }
 
-        private void OnStreamPaused(string kind)
+        private void OnStreamPaused(StreamKind kind)
         {
-            OnStreamPausedCallback?.Invoke(kind);
+            //OnStreamPausedCallback?.Invoke(kind);
         }
-        private void OnStreamResumed(string kind)
+        private void OnStreamResumed(StreamKind kind)
         {
-            OnStreamResumedCallback?.Invoke(kind);
+            //OnStreamResumedCallback?.Invoke(kind);
         }
 
         private void OnVideoFrameReceived(byte[] videoStream)
@@ -295,6 +295,26 @@ namespace live.videosdk
                 return;
             }
             _participant.ToggleMic(status);
+        }
+        public void PauseStream(StreamKind kind)
+        {
+            if (_participant == null) return;
+            if (!IsLocal)
+            {
+                Debug.LogError($"{name} participantId {Id} is not your local participant");
+                return;
+            }
+            _participant.PauseStream(kind);
+        }
+        public void ResumeStream(StreamKind kind)
+        {
+            if (_participant == null) return;
+            if (!IsLocal)
+            {
+                Debug.LogError($"{name} participantId {Id} is not your local participant");
+                return;
+            }
+            _participant.ResumeStream(kind);
         }
 
         private void OnDestroy()
