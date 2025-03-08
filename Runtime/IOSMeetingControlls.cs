@@ -27,13 +27,15 @@ namespace live.videosdk
 
         public void PauseStream(StreamKind kind, string Id)
         {
-            pauseStream(kind.ToString(), Id);
-            _videoSdkDto.SendDTO("INFO", $"pauseStream:- kind:{kind} ParticipantId:{Id}");
+            string type = kind.ToString();
+            pauseStream(type, Id);
+            _videoSdkDto.SendDTO("INFO", $"pauseStream:- kind:{type} ParticipantId:{Id}");
         }
         public void ResumeStream(StreamKind kind, string Id)
         {
-            pauseStream(kind.ToString(), Id);
-            _videoSdkDto.SendDTO("INFO", $"resumeStream:- kind:{kind} ParticipantId:{Id}");
+            string type = kind.ToString();
+            pauseStream(type, Id);
+            _videoSdkDto.SendDTO("INFO", $"resumeStream:- kind:{type} ParticipantId:{Id}");
         }
 
 

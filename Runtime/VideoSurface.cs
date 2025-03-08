@@ -17,8 +17,8 @@ namespace live.videosdk
 
         public event Action<StreamKind> OnStreamEnableCallback;
         public event Action<StreamKind> OnStreamDisableCallback;
-        public event Action<StreamKind> OnStreamPausedCallback;
-        public event Action<StreamKind> OnStreamResumedCallback;
+        //public event Action<StreamKind> OnStreamPausedCallback;
+        //public event Action<StreamKind> OnStreamResumedCallback;
 
         public string Id
         {

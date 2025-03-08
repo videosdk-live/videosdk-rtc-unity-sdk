@@ -6,15 +6,23 @@ namespace live.videosdk
     internal sealed class AndroidMeetingControlls : IMeetingControlls
     {
         private AndroidJavaClass _pluginClass;
+        private AndroidJavaObject _applicationContext;
+        private AndroidJavaObject _currentActivity;
         private IVideoSDKDTO _videoSdkDto;
         public AndroidMeetingControlls(IVideoSDKDTO videoSdkDto)
         {
-            _pluginClass = new AndroidJavaClass(Meeting.packageName);
+            using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            {
+                _currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+                _applicationContext = _currentActivity.Call<AndroidJavaObject>("getApplicationContext");
+                _pluginClass = new AndroidJavaClass(Meeting.packageName);
+            }
+           
             _videoSdkDto = videoSdkDto;
         }
         public void ToggleWebCam(bool status, string Id)
         {
-            _pluginClass.CallStatic("toggleWebCam", status);
+            _pluginClass.CallStatic("toggleWebCam", status, _applicationContext);
             _videoSdkDto.SendDTO("INFO", $"ToggleWebCam:- status:{status} ParticipantId:{Id}");
         }
         public void ToggleMic(bool status, string Id)
@@ -25,13 +33,15 @@ namespace live.videosdk
 
         public void PauseStream(StreamKind kind, string Id)
         {
-            _pluginClass.CallStatic("pauseStream", kind.ToString());
-            _videoSdkDto.SendDTO("INFO", $"pauseStream:- kind:{kind} ParticipantId:{Id}");
+            string type = kind.ToString();
+            _pluginClass.CallStatic("pauseStream", type);
+            _videoSdkDto.SendDTO("INFO", $"pauseStream:- kind:{type} ParticipantId:{Id}");
         }
         public void ResumeStream(StreamKind kind, string Id)
         {
-            _pluginClass.CallStatic("pauseStream", kind);
-            _videoSdkDto.SendDTO("INFO", $"pauseStream:- kind:{kind} ParticipantId:{Id}");
+            string type = kind.ToString();
+            _pluginClass.CallStatic("resumeStream", type);
+            _videoSdkDto.SendDTO("INFO", $"resumeStream:- kind:{type} ParticipantId:{Id}");
         }
     }
 
