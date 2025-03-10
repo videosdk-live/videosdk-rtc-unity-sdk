@@ -34,13 +34,13 @@ namespace live.videosdk
         public void PauseStream(StreamKind kind, string Id)
         {
             string type = kind.ToString();
-            _pluginClass.CallStatic("pauseStream", type);
+            _pluginClass.CallStatic("pauseStream", Id,type);
             _videoSdkDto.SendDTO("INFO", $"pauseStream:- kind:{type} ParticipantId:{Id}");
         }
         public void ResumeStream(StreamKind kind, string Id)
         {
             string type = kind.ToString();
-            _pluginClass.CallStatic("resumeStream", type);
+            _pluginClass.CallStatic("resumeStream",Id ,type);
             _videoSdkDto.SendDTO("INFO", $"resumeStream:- kind:{type} ParticipantId:{Id}");
         }
     }
