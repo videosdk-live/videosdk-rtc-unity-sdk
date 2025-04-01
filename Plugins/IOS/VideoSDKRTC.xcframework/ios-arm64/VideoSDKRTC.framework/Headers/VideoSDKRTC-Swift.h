@@ -317,6 +317,13 @@ SWIFT_CLASS("_TtC11VideoSDKRTC20CharacterStateChange")
 @end
 
 
+SWIFT_CLASS("_TtC11VideoSDKRTC18KeyProviderOptions")
+@interface KeyProviderOptions : NSObject
+- (nonnull instancetype)init SWIFT_UNAVAILABLE;
++ (nonnull instancetype)new SWIFT_UNAVAILABLE_MSG("-init is unavailable");
+@end
+
+
 SWIFT_CLASS("_TtC11VideoSDKRTC13PubSubMessage")
 @interface PubSubMessage : NSObject
 - (nonnull instancetype)init SWIFT_UNAVAILABLE;

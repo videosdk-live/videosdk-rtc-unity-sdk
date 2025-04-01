@@ -115,7 +115,7 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
         
         let customVideoTrack = webCamEnabled ? createCustomVideoTrack() : nil
         self.meeting = VideoSDK.initMeeting(
-            meetingId: meetingId,
+            meetingId: "pbow-6vec-vahn",
             participantId: participantId ?? "",
             participantName: participantName,
             micEnabled: micEnabled,
@@ -202,15 +202,14 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
         guard let meeting = meeting else {
             return
         }
-        
-        meeting.pauseAllConsumers(kind)
+        meeting.pauseAllStreams(kind)
     }
     
     @objc public func resumeAllStreams(kind: String) {
         guard let meeting = meeting else {
             return
         }
-        meeting.resumeAllConsumers(kind)
+        meeting.resumeAllStreams(kind)
     }
     
     @objc public func pauseStream(participantId: String, kind: String) {
