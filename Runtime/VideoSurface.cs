@@ -10,15 +10,17 @@ namespace live.videosdk
     public sealed class VideoSurface : MonoBehaviour
     {
         private IUser _participant;
-        private Renderer objectRenderer;
-        private RawImage uiImage;
+        private Renderer _renderer;
+        private RawImage _rawImage;
         private Texture2D _videoTexture;
         private VideoSurfaceType _rendertype;
 
-        public event Action<string> OnStreamEnableCallback;
-        public event Action<string> OnStreamDisableCallback;
+        public event Action<StreamKind> OnStreamEnableCallback;
+        public event Action<StreamKind> OnStreamDisableCallback;
+        //public event Action<StreamKind> OnStreamPausedCallback;
+        //public event Action<StreamKind> OnStreamResumedCallback;
 
-        public string Id
+        public string ParticipantId
         {
             get
             {
@@ -77,11 +79,26 @@ namespace live.videosdk
             }
         }
 
+        [SerializeField] bool flipTexture = false;
+        public bool FlipTexture
+        {
+            get => flipTexture;
+            set
+            {
+                if (flipTexture != value)
+                {
+                    flipTexture = value;
+                    Flip(value);
+                }
+            }
+        }
+
         private void Awake()
         {
-            objectRenderer = GetComponentInChildren<Renderer>();
-            uiImage = GetComponentInChildren<RawImage>();
+            _renderer = GetComponentInChildren<Renderer>();
+            _rawImage = GetComponentInChildren<RawImage>();
             _videoTexture = new Texture2D(720, 480, TextureFormat.RGBA32, false);
+            Flip(FlipTexture);
         }
 
         public void SetVideoSurfaceType(VideoSurfaceType type)
@@ -89,24 +106,41 @@ namespace live.videosdk
             _rendertype = type;
         }
 
-        private void SetTexture(Texture2D texture)
+        public void SetTexture(Texture2D texture)
         {
             switch (_rendertype)
             {
                 case VideoSurfaceType.RawImage:
                     {
                         // Assign the texture to the UI RawImage
-                        uiImage.texture = texture;
+                        _rawImage.texture = texture;
                         break;
                     }
                 case VideoSurfaceType.Renderer:
                     {
                         // Assign the texture to the 3D object's material
-                        objectRenderer.material.mainTexture = texture;
+                        _renderer.material.mainTexture = texture;
                         break;
                     }
+                case VideoSurfaceType.None:
+                    break;
             }
         }
+
+        public void SetVideoRenderer(RawImage rawImage)
+        {
+            SetVideoSurfaceType(VideoSurfaceType.RawImage);
+            this._rawImage = rawImage;
+            Flip(FlipTexture);
+        }
+
+        public void SetVideoRenderer(Renderer renderer)
+        {
+            SetVideoSurfaceType(VideoSurfaceType.Renderer);
+            this._renderer = renderer;
+            Flip(FlipTexture);
+        }
+
         private void RemoveTexture()
         {
             switch (_rendertype)
@@ -114,15 +148,29 @@ namespace live.videosdk
                 case VideoSurfaceType.RawImage:
                     {
                         // Assign the texture to the UI RawImage
-                        uiImage.texture = null;
+                        _rawImage.texture = null;
                         break;
                     }
                 case VideoSurfaceType.Renderer:
                     {
                         // Assign the texture to the 3D object's material
-                        objectRenderer.material.mainTexture = null;
+                        _renderer.material.mainTexture = null;
                         break;
                     }
+                case VideoSurfaceType.None:
+                    break;
+            }
+        }
+
+        private void Flip(bool status)
+        {
+            if (_rawImage != null)
+            {
+                _rawImage.rectTransform.localScale = status? new Vector3(-1, 1, 1): new Vector3(1, 1, 1);
+            }
+            if (_renderer != null)
+            {
+                _renderer.material.mainTextureScale = status ? new Vector2(-1, 1) : new Vector2(1, 1);
             }
         }
 
@@ -132,10 +180,10 @@ namespace live.videosdk
             {
                 UnRegisterParticipantCallback();
             }
-            _participant = Meeting.GetParticipantById(participantData.ParticipantId);
+            _participant = Meeting.GetParticipantById(participantData.Id);
             if (_participant == null)
             {
-                Debug.LogError($"Invalid Participant Id: {participantData.ParticipantId}. No such participant exist");
+                Debug.LogError($"Invalid Participant Id: {participantData.Id}. No such participant exist");
                 return;
             }
 
@@ -161,6 +209,8 @@ namespace live.videosdk
             _participant.OnStreamDisabledCallaback += OnStreamDisabled;
             _participant.OnStreamEnabledCallaback += OnStreamEnabled;
             _participant.OnParticipantLeftCallback += OnParticipantLeft;
+            //_participant.OnStreamPausedCallaback +=OnStreamPaused;
+            //_participant.OnStreamResumedCallaback +=OnStreamResumed;
             RegisterVideoFrameCallbacks();
         }
 
@@ -170,6 +220,8 @@ namespace live.videosdk
             _participant.OnStreamDisabledCallaback -= OnStreamDisabled;
             _participant.OnStreamEnabledCallaback -= OnStreamEnabled;
             _participant.OnParticipantLeftCallback -= OnParticipantLeft;
+            //_participant.OnStreamPausedCallaback -= OnStreamPaused;
+            //_participant.OnStreamResumedCallaback -= OnStreamResumed;
             UnRegisterVideoFrameCallbacks();
         }
 
@@ -190,19 +242,28 @@ namespace live.videosdk
             _participant = null;
         }
 
-        private void OnStreamEnabled(string kind)
+        private void OnStreamEnabled(StreamKind kind)
         {
             OnStreamEnableCallback?.Invoke(kind);
         }
 
-        private void OnStreamDisabled(string kind)
+        private void OnStreamDisabled(StreamKind kind)
         {
-            if (kind.Equals("video"))
+            if (kind == StreamKind.VIDEO)
             {
                 RemoveTexture();
             }
 
             OnStreamDisableCallback?.Invoke(kind);
+        }
+
+        private void OnStreamPaused(StreamKind kind)
+        {
+            //OnStreamPausedCallback?.Invoke(kind);
+        }
+        private void OnStreamResumed(StreamKind kind)
+        {
+            //OnStreamResumedCallback?.Invoke(kind);
         }
 
         private void OnVideoFrameReceived(byte[] videoStream)
@@ -219,7 +280,7 @@ namespace live.videosdk
             if (_participant == null) return;
             if (!IsLocal)
             {
-                Debug.LogError($"{name} participantId {Id} is not your local participant");
+                Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
                 return;
             }
             _participant.ToggleWebCam(status);
@@ -230,55 +291,30 @@ namespace live.videosdk
             if (_participant == null) return;
             if (!IsLocal)
             {
-                Debug.LogError($"{name} participantId {Id} is not your local participant");
+                Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
                 return;
             }
             _participant.ToggleMic(status);
         }
-
-        public void PauseAudio()
+        public void PauseStream(StreamKind kind)
         {
             if (_participant == null) return;
-            if (IsLocal)
+            if (!IsLocal)
             {
-                Debug.LogError($"{name} participantId {Id} is local participant. This method is only accessible for remote users");
+                Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
                 return;
             }
-
-            _participant.PauseStream("audio");
+            _participant.PauseStream(kind);
         }
-
-        public void PauseVideo()
+        public void ResumeStream(StreamKind kind)
         {
             if (_participant == null) return;
-            if (IsLocal)
+            if (!IsLocal)
             {
-                Debug.LogError($"{name} participantId {Id} is local participant. This method is only accessible for remote users");
+                Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
                 return;
             }
-            _participant.PauseStream("video");
-        }
-
-        public void ResumeAudio()
-        {
-            if (_participant == null) return;
-            if (IsLocal)
-            {
-                Debug.LogError($"{name} participantId {Id} is local participant. This method is only accessible for remote users");
-                return;
-            }
-            _participant.ResumeStream("audio");
-        }
-
-        public void ResumeVideo()
-        {
-            if (_participant == null) return;
-            if (IsLocal)
-            {
-                Debug.LogError($"{name} participantId {Id} is local participant. This method is only accessible for remote users");
-                return;
-            }
-            _participant.ResumeStream("video");
+            _participant.ResumeStream(kind);
         }
 
         private void OnDestroy()
@@ -290,6 +326,7 @@ namespace live.videosdk
 
     public enum VideoSurfaceType
     {
+        None,
         RawImage,
         Renderer
     }

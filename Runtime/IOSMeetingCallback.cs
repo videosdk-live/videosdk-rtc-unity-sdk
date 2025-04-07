@@ -30,7 +30,13 @@ namespace live.videosdk
           OnParticipantJoined,
           OnParticipantLeft,
           OnMeetingStateChanged,
-          OnError
+          OnError,
+          OnSpeakerChanged,
+          OnExternalCallStarted,
+          OnExternalCallRinging,
+          OnExternalCallHangup,
+          OnPausedAllStreams,
+          OnResumedAllStreams
               );
         }
 
@@ -115,14 +121,77 @@ namespace live.videosdk
             OnFetchAudioDeviceCallback -= callback;
         }
 
-        private static event Action<string, string, string, bool, bool , string , string , string , string > OnMeetingJoinedCallback;
-        private static event Action<string, string, bool> OnMeetingLeftCallback;
-        private static event Action<string, string, bool> OnParticipantJoinedCallback;
-        private static event Action<string, string, bool> OnParticipantLeftCallback;
-        private static event Action<string> OnErrorCallback;
-        private static event Action<string> OnMeetingStateChangedCallback;
-        private static event Action<string, string[]> OnAudioDeviceChangedCallback;
-        private static event Action<string[]> OnFetchAudioDeviceCallback;
+        public void SubscribeToSpeakerChanged(Action<string> callback)
+        {
+            OnSpeakerChangedCallback+=callback;
+        }
+
+        public void UnsubscribeFromSpeakerChanged(Action<string> callback)
+        {
+            OnSpeakerChangedCallback-=callback;
+        }
+
+        public void SubscribeToExternalCallHangup(Action callback)
+        {
+            OnExternalCallHangupCallback += callback;
+        }
+        public void UnsubscribeFromExternalCallHangup(Action callback)
+        {
+            OnExternalCallHangupCallback -= callback;
+        }
+        public void SubscribeToExternalCallStarted(Action callback)
+        {
+            OnExternalCallStartedCallback += callback;
+        }
+        public void UnsubscribeFromExternalCallStarted(Action callback)
+        {
+            OnExternalCallStartedCallback -= callback;
+        }
+        public void SubscribeToExternalCallRinging(Action callback)
+        {
+            OnExternalCallRingingCallback += callback;
+        }
+        public void UnsubscribeFromExternalCallRinging(Action callback)
+        {
+            OnExternalCallRingingCallback -= callback;
+        }
+
+        public void SubscribeToPausedAllStreams(Action<string> callback)
+        {
+            OnPausedAllStreamsCallback += callback;
+        }
+
+        public void UnsubscribeFromPausedAllStreams(Action<string> callback)
+        {
+            OnPausedAllStreamsCallback -= callback;
+        }
+
+        public void SubscribeToResumedAllStreams(Action<string> callback)
+        {
+            OnResumedAllStreamsCallback += callback;
+        }
+
+        public void UnsubscribeFromResumedAllStreams(Action<string> callback)
+        {
+            OnResumedAllStreamsCallback -= callback;
+        }
+
+
+
+        private event Action<string, string, string, bool, bool , string , string , string , string > OnMeetingJoinedCallback;
+        private event Action<string, string, bool> OnMeetingLeftCallback;
+        private event Action<string, string, bool> OnParticipantJoinedCallback;
+        private event Action<string, string, bool> OnParticipantLeftCallback;
+        private event Action<string> OnErrorCallback;
+        private event Action<string> OnMeetingStateChangedCallback;
+        private event Action<string, string[]> OnAudioDeviceChangedCallback;
+        private event Action<string[]> OnFetchAudioDeviceCallback;
+        private event Action<string> OnSpeakerChangedCallback;
+        private event Action OnExternalCallHangupCallback;
+        private event Action OnExternalCallStartedCallback;
+        private event Action OnExternalCallRingingCallback;
+        private event Action<string> OnPausedAllStreamsCallback;
+        private event Action<string> OnResumedAllStreamsCallback;
 
         // Delegate definitions
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -143,6 +212,23 @@ namespace live.videosdk
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnErrorDelegate(string jsonString);
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnSpeakerChangedDelegate(string jsonString);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnExternalCallHangupDelegate();
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnExternalCallStartedDelegate();
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnExternalCallRingingDelegate();
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnPausedAllStreamsDelegate(string kind);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnResumedAllStreamsDelegate(string kind);
 
         // Bind the delegates to native functions
         [DllImport("__Internal")]
@@ -152,48 +238,84 @@ namespace live.videosdk
             OnParticipantJoinedDelegate onParticipantJoined,
             OnParticipantLeftDelegate onParticipantLeft,
             OnMeetingStateChangedDelegate onMeetingStateChanged,
-            OnErrorDelegate onError
+            OnErrorDelegate onError,
+            OnSpeakerChangedDelegate onSpeakerChanged,
+            OnExternalCallStartedDelegate onCallStarted,
+            OnExternalCallRingingDelegate onCallRinging,
+            OnExternalCallHangupDelegate onCallHangup,
+            OnPausedAllStreamsDelegate OnPausedAllStreams,
+            OnResumedAllStreamsDelegate OnResumedAllStreams
         );
-
-
 
         [AOT.MonoPInvokeCallback(typeof(OnMeetingJoinedDelegate))]
         private static void OnMeetingJoined(string meetingId, string Id, string name, bool enabledLogs,string logEndPoint, string jwtKey, string peerId, string sessionId)
         {
-            OnMeetingJoinedCallback?.Invoke(meetingId, Id, name, true,enabledLogs,logEndPoint,jwtKey,peerId,sessionId);
+            Instance.OnMeetingJoinedCallback?.Invoke(meetingId, Id, name, true,enabledLogs,logEndPoint,jwtKey,peerId,sessionId);
         }
 
         [AOT.MonoPInvokeCallback(typeof(OnMeetingLeftDelegate))]
         private static void OnMeetingLeft(string Id, string name)
         {
-            OnMeetingLeftCallback?.Invoke(Id, name, true);
+            Instance.OnMeetingLeftCallback?.Invoke(Id, name, true);
         }
 
         [AOT.MonoPInvokeCallback(typeof(OnParticipantJoinedDelegate))]
         private static void OnParticipantJoined(string Id, string name)
         {
-            OnParticipantJoinedCallback?.Invoke(Id, name, false);
+            Instance.OnParticipantJoinedCallback?.Invoke(Id, name, false);
         }
 
         [AOT.MonoPInvokeCallback(typeof(OnParticipantLeftDelegate))]
         private static void OnParticipantLeft(string Id, string name)
         {
-            OnParticipantLeftCallback?.Invoke(Id, name, false);
+            Instance.OnParticipantLeftCallback?.Invoke(Id, name, false);
         }
 
         [AOT.MonoPInvokeCallback(typeof(OnMeetingStateChangedDelegate))]
         private static void OnMeetingStateChanged(string state)
         {
-            OnMeetingStateChangedCallback?.Invoke(state);
+            Instance.OnMeetingStateChangedCallback?.Invoke(state);
         }
 
         [AOT.MonoPInvokeCallback(typeof(OnErrorDelegate))]
         private static void OnError(string jsonString)
         {
-            OnErrorCallback?.Invoke(jsonString);
+            Instance.OnErrorCallback?.Invoke(jsonString);
         }
 
-        
+        [AOT.MonoPInvokeCallback(typeof(OnSpeakerChangedDelegate))]
+        private static void OnSpeakerChanged(string Id)
+        {
+            Instance.OnSpeakerChangedCallback?.Invoke(Id);
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(OnExternalCallRingingDelegate))]
+        private static void OnExternalCallRinging()
+        {
+            Instance.OnExternalCallRingingCallback?.Invoke();
+        }
+        [AOT.MonoPInvokeCallback(typeof(OnExternalCallStartedDelegate))]
+        private static void OnExternalCallStarted()
+        {
+            Instance.OnExternalCallStartedCallback?.Invoke();
+        }
+        [AOT.MonoPInvokeCallback(typeof(OnExternalCallHangupDelegate))]
+        private static void OnExternalCallHangup()
+        {
+            Instance.OnExternalCallHangupCallback?.Invoke();
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(OnPausedAllStreamsDelegate))]
+        private static void OnPausedAllStreams(string kind)
+        {
+            Instance.OnPausedAllStreamsCallback?.Invoke(kind);
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(OnResumedAllStreamsDelegate))]
+        private static void OnResumedAllStreams(string kind)
+        {
+            Instance.OnResumedAllStreamsCallback?.Invoke(kind);
+        }
     }
 #endif
 }

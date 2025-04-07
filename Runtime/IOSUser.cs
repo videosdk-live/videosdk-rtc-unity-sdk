@@ -13,18 +13,22 @@ namespace live.videosdk
         public bool CamEnabled { get; private set; }
 
         public event Action<byte[]> OnVideoFrameReceivedCallback;
-        public event Action<string> OnStreamEnabledCallaback;
-        public event Action<string> OnStreamDisabledCallaback;
+        public event Action<StreamKind> OnStreamEnabledCallaback;
+        public event Action<StreamKind> OnStreamDisabledCallaback;
         public event Action OnParticipantLeftCallback;
+        public event Action<StreamKind> OnStreamPausedCallaback;
+        public event Action<StreamKind> OnStreamResumedCallaback;
         private IMeetingControlls _meetControlls;
-        public IOSUser(Participant participantData, IMeetingControlls meetControlls)
+        private IVideoSDKDTO _videoSdkDto;
+        public IOSUser(IParticipant participantData, IMeetingControlls meetControlls,IVideoSDKDTO videoSDK)
         {
             if (participantData != null)
             {
                 IsLocal = participantData.IsLocal;
-                ParticipantId = participantData.ParticipantId;
+                ParticipantId = participantData.Id;
                 ParticipantName = participantData.Name;
                 _meetControlls = meetControlls;
+                _videoSdkDto = videoSDK;
                 RegiesterCallBacks();
             }
 
@@ -35,13 +39,17 @@ namespace live.videosdk
             IOSParticipantCallback.Instance.SubscribeToStreamEnabled(OnStreamEnable);
             IOSParticipantCallback.Instance.SubscribeToStreamDisabled(OnStreamDisable);
             IOSParticipantCallback.Instance.SubscribeToFrameReceived(OnVideoFrameReceive);
+            IOSParticipantCallback.Instance.SubscribeToPauseStream(OnStreamPaused);
+            IOSParticipantCallback.Instance.SubscribeToResumeStream(OnStreamResumed);
         }
 
         private void UnRegisterCallBacks()
         {
             IOSParticipantCallback.Instance.UnsubscribeFromStreamEnabled(OnStreamEnable);
             IOSParticipantCallback.Instance.UnsubscribeFromStreamDisabled(OnStreamDisable);
-            IOSParticipantCallback.Instance.UnsubscribeFromFrameReceived(OnVideoFrameReceive);
+            IOSParticipantCallback.Instance.UnsubscribeFromFrameReceived(OnVideoFrameReceive);        
+            IOSParticipantCallback.Instance.UnsubscribeFromPauseStream(OnStreamPaused);        
+            IOSParticipantCallback.Instance.UnsubscribeFromResumeStream(OnStreamResumed);        
         }
 
         public void OnParticipantLeft()
@@ -54,6 +62,7 @@ namespace live.videosdk
         private void OnStreamEnable(string id,string kind)
         {
             if (!id.Equals(ParticipantId)) return;
+            _videoSdkDto.SendDTO("INFO", $"StreamEnabled:- Kind: {kind} Id: {id} ParticipantName: {ParticipantName}");
             if (kind.ToLower().Equals("video"))
             {
                 CamEnabled = true;
@@ -64,13 +73,18 @@ namespace live.videosdk
             }
             RunOnUnityMainThread(() =>
             {
-                OnStreamEnabledCallaback?.Invoke(kind);
+                if (Enum.TryParse(kind, true, out StreamKind streamKind))
+                {
+                    OnStreamEnabledCallaback?.Invoke(streamKind);
+
+                }
             });
         }
 
         private void OnStreamDisable(string id, string kind)
         {
             if (!id.Equals(ParticipantId)) return;
+            _videoSdkDto.SendDTO("INFO", $"StreamDisable:- Kind: {kind} Id: {id} ParticipantName: {ParticipantName}");
             if (kind.ToLower().Equals("video"))
             {
                 CamEnabled = false;
@@ -81,7 +95,10 @@ namespace live.videosdk
             }
             RunOnUnityMainThread(() =>
             {
-                OnStreamDisabledCallaback?.Invoke(kind);
+                if (Enum.TryParse(kind, true, out StreamKind streamKind))
+                {
+                    OnStreamDisabledCallaback?.Invoke(streamKind);
+                }
             });
 
         }
@@ -105,6 +122,34 @@ namespace live.videosdk
             }
 
         }
+
+        private void OnStreamResumed(string id, string kind)
+        {
+            if (!id.Equals(ParticipantId)) return;
+            _videoSdkDto.SendDTO("INFO", $"StreamResumed:- Kind: {kind} Id: {id} ParticipantName: {ParticipantName}");
+            RunOnUnityMainThread(() =>
+            {
+                if (Enum.TryParse(kind, true, out StreamKind streamKind))
+                {
+                    OnStreamResumedCallaback?.Invoke(streamKind);
+
+                }
+            });
+        }
+
+        private void OnStreamPaused(string id, string kind)
+        {
+            if (!id.Equals(ParticipantId)) return;
+             _videoSdkDto.SendDTO("INFO", $"StreamPaused:- Kind: {kind} Id: {id} ParticipantName: {ParticipantName}");
+            RunOnUnityMainThread(() =>
+            {
+                if (Enum.TryParse(kind, true, out StreamKind streamKind))
+                {
+                    OnStreamPausedCallaback?.Invoke(streamKind);
+                }
+            });
+        }
+
 
         public void RunOnUnityMainThread(Action action)
         {
@@ -133,25 +178,23 @@ namespace live.videosdk
             }
             _meetControlls.ToggleMic(status, ParticipantId);
         }
-
-        public void PauseStream(string kind)
+        public void PauseStream(StreamKind kind)
         {
             if (_meetControlls == null)
             {
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.PauseStream(ParticipantId, kind);
+            _meetControlls.PauseStream(kind, ParticipantId);
         }
-
-        public void ResumeStream(string kind)
+        public void ResumeStream(StreamKind kind)
         {
             if (_meetControlls == null)
             {
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.ResumeStream(ParticipantId, kind);
+            _meetControlls.ResumeStream(kind, ParticipantId);
         }
 
 

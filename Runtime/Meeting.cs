@@ -6,33 +6,41 @@ using UnityEngine.Android;
 using Newtonsoft.Json;
 using System.Runtime.InteropServices;
 using System.IO;
+using System.Collections.Concurrent;
 
 namespace live.videosdk
 {
     public sealed class Meeting : MonoBehaviour
     {
-
-        private static Meeting _instance;
         public const string packageName = "live.videosdk.unity.android.VideoSDKUnityPlugin";
+        private static Meeting _instance;
         private IApiCaller _apiCaller;
         private const string _meetingUri = "https://api.videosdk.live/v2/rooms";
         private const string _customMeetingUri = "https://api.videosdk.live/v1/prebuilt/meetings/";
         private const string _authMeetingUri = "https://api.videosdk.live/v2/rooms/validate/";
-        private static readonly Dictionary<string, IUser> _participantsDict = new Dictionary<string, IUser>();
+        private static readonly ConcurrentDictionary<string, IUser> _participantsDict = new ConcurrentDictionary<string, IUser>();
         public string MeetingID { get; private set; }
+        public MeetingState MeetingState { get { return _meetState; } }
+        private MeetingState _meetState;
+        private string[] _avaliableAudioDevicesArray;
         private IMeetingActivity _meetingActivity;
         private IVideoSDKDTO _videoSdkDto;
-        public string[] _avaliableAudioDevicesArray;
-        private const string _packageVersion = "1.2.1";
+        private const string _packageVersion = "0.2.3";
         #region Callbacks For User
         public event Action<string> OnCreateMeetingIdCallback;
         public event Action<string> OnCreateMeetingIdFailedCallback;
-        private event Action<string> OnJoinMeetingFailedCallback;
         public event Action<IParticipant> OnParticipantJoinedCallback;
         public event Action<IParticipant> OnParticipantLeftCallback;
-        public event Action<string> OnMeetingStateChangedCallback;
-        private event Action<string, string[]> OnAudioDeviceChangedCallback;
+        public event Action<MeetingState> OnMeetingStateChangedCallback;
         public event Action<Error> OnErrorCallback;
+        public event Action<string> OnSpeakerChangedCallback;
+        public event Action OnCallHangupCallback;
+        public event Action OnCallStartedCallback;
+        public event Action OnCallRingingCallback;
+        private event Action<string> OnJoinMeetingFailedCallback;
+        private event Action<string, string[]> OnAudioDeviceChangedCallback;
+        public event Action<StreamKind> OnPausedAllStreamsCallback;
+        public event Action<StreamKind> OnResumedAllStreamsCallback;
 
         #endregion
 
@@ -50,7 +58,6 @@ namespace live.videosdk
             }
             
         }
-
 
         private void InitializeAndroidComponent()
         {
@@ -108,12 +115,23 @@ namespace live.videosdk
             _meetingActivity = MeetingActivityFactory.Create(_videoSdkDto);
             if (_meetingActivity!=null)
             {
-                RegisterMeetCallBacks();
+                RegisterCallbacks();
             }
             
         }
 
-        private void RegisterMeetCallBacks()
+        #region Callbacks Register/DeRegister
+        private void RegisterCallbacks()
+        {
+            RegisterMeetCallbacks();
+            OnJoinMeetingFailedCallback += OnMeetingJoinFailed;
+        }
+        private void UnRegisterCallbacks()
+        {
+            UnRegisterMeetCallbacks();
+            OnJoinMeetingFailedCallback -= OnMeetingJoinFailed;
+        }
+        private void RegisterMeetCallbacks()
         {
             _meetingActivity.SubscribeToMeetingJoined(OnMeetingJoined);
             _meetingActivity.SubscribeToMeetingLeft(OnMeetingLeft);
@@ -123,9 +141,32 @@ namespace live.videosdk
             _meetingActivity.SubscribeToError(OnError);
             _meetingActivity.SubscribeToFetchAudioDevice(OnFetchAudioDevice);
             _meetingActivity.SubscribeToAudioDeviceChanged(OnAudioDeviceChanged);
-
-            OnJoinMeetingFailedCallback += OnMeetingJoinFailed;
+            _meetingActivity.SubscribeToSpeakerChanged(OnSpeakerChanged);
+            _meetingActivity.SubscribeToExternalCallStarted(OnExternalCallStarted);
+            _meetingActivity.SubscribeToExternalCallRinging(OnExternalCallRinging);
+            _meetingActivity.SubscribeToExternalCallHangup(OnExternalCallHangup);
+            _meetingActivity.SubscribeToPausedAllStreams(OnPausedAllStreams);
+            _meetingActivity.SubscribeToResumedAllStreams(OnResumedAllStreams);
         }
+
+        private void UnRegisterMeetCallbacks()
+        {
+            _meetingActivity.UnsubscribeFromMeetingJoined(OnMeetingJoined);
+            _meetingActivity.UnsubscribeFromMeetingLeft(OnMeetingLeft);
+            _meetingActivity.UnsubscribeFromParticipantJoined(OnPraticipantJoin);
+            _meetingActivity.UnsubscribeFromParticipantLeft(OnPraticipantLeft);
+            _meetingActivity.UnsubscribeFromMeetingStateChanged(OnMeetingStateChanged);
+            _meetingActivity.UnsubscribeFromError(OnError);
+            _meetingActivity.UnsubscribeFromFetchAudioDevice(OnFetchAudioDevice);
+            _meetingActivity.UnsubscribeFromAudioDeviceChanged(OnAudioDeviceChanged);
+            _meetingActivity.UnsubscribeFromSpeakerChanged(OnSpeakerChanged);
+            _meetingActivity.UnsubscribeFromExternalCallStarted(OnExternalCallStarted);
+            _meetingActivity.UnsubscribeFromExternalCallRinging(OnExternalCallRinging);
+            _meetingActivity.UnsubscribeFromExternalCallHangup(OnExternalCallHangup);
+            _meetingActivity.UnsubscribeFromPausedAllStreams(OnPausedAllStreams);
+            _meetingActivity.UnsubscribeFromResumedAllStreams(OnResumedAllStreams);
+        }
+        #endregion
 
         private void RunOnUnityMainThread(Action action)
         {
@@ -217,7 +258,21 @@ namespace live.videosdk
             _meetingActivity?.LeaveMeeting();
         }
 
-        public IEnumerable<string>GetAudioDevices()
+        public void PauseAllStreams(StreamKind kind)
+        {
+            _meetingActivity.PauseAllStreams(kind.ToString().ToLower());
+        }
+        public void ResumeAllStreams(StreamKind kind)
+        {
+            _meetingActivity.ResumeAllStreams(kind.ToString().ToLower());
+        }
+
+        private void SetVideoEncoderConfig(VideoEncoderConfig config)
+        {
+            _meetingActivity?.SetVideoEncoderConfig(config.ToString());
+        }
+
+        private IEnumerable<string>GetAudioDevices()
         {
             return _avaliableAudioDevicesArray;
         }
@@ -231,12 +286,18 @@ namespace live.videosdk
         #region NativeCallBacks
         private void OnMeetingJoined(string meetingId, string Id, string name, bool isLocal, bool enabledLogs, string logEndPoint, string jwtKey, string peerId, string sessionId)
         {
+            if (_participantsDict.ContainsKey(Id))
+            {
+                return;
+            }
+            _videoSdkDto.SendDTO("INFO", $"MeetingJoined:- Id: {Id} IsLocal: {isLocal} ParticipantName: {name}");
             MeetingID = meetingId;
             _videoSdkDto.Initialize(sessionId,jwtKey,meetingId,peerId,enabledLogs,logEndPoint,_packageVersion);
             OnPraticipantJoin(Id, name, isLocal);
         }
         private void OnMeetingLeft(string Id, string name, bool isLocal)
         {
+            _videoSdkDto.SendDTO("INFO", $"MeetingLeft:- Id: {Id} IsLocal: {isLocal} ParticipantName: {name}");
             RunOnUnityMainThread(() =>
             {
                 OnParticipantLeftCallback?.Invoke(new Participant(Id, name, isLocal));
@@ -250,13 +311,13 @@ namespace live.videosdk
 
         private void OnPraticipantJoin(string Id, string name, bool isLocal)
         {
-            if(_participantsDict.ContainsKey(Id))
+            if (_participantsDict.ContainsKey(Id))
             {
                 return;
             }
+            _videoSdkDto.SendDTO("INFO", $"PraticipantJoin:- Id: {Id} IsLocal: {isLocal} ParticipantName: {name}");
             var participantData = new Participant(Id, name, isLocal);
-            _participantsDict[Id] = UserFactory.Create(participantData,MeetingControllFactory.Create(_videoSdkDto));
-
+            AddParticipant(Id, UserFactory.Create(participantData, MeetingControllFactory.Create(_videoSdkDto), _videoSdkDto));
             RunOnUnityMainThread(() =>
             {
                 OnParticipantJoinedCallback?.Invoke(participantData);
@@ -265,6 +326,7 @@ namespace live.videosdk
         }
         private void OnPraticipantLeft(string Id, string name, bool isLocal)
         {
+            _videoSdkDto.SendDTO("INFO", $"PraticipantLeft:- Id: {Id} IsLocal: {isLocal} ParticipantName: {name}");
             RunOnUnityMainThread(() =>
             {
                 OnParticipantLeftCallback?.Invoke(new Participant(Id, name, isLocal));
@@ -272,11 +334,20 @@ namespace live.videosdk
                 if (_participantsDict.TryGetValue(Id, out IUser participant))
                 {
                     participant.OnParticipantLeft();
-                    _participantsDict.Remove(Id);
+                    RemoveParticipant(Id);
                 }
 
             });
            
+        }
+
+        private bool AddParticipant(string key, IUser participant)
+        {
+            return _participantsDict.TryAdd(key, participant);
+        }
+        private bool RemoveParticipant(string key)
+        {
+            return _participantsDict.TryRemove(key, out _);
         }
 
         private void OnError(string jsonString)
@@ -291,11 +362,25 @@ namespace live.videosdk
 
         private void OnMeetingStateChanged(string state)
         {
+            _videoSdkDto.SendDTO("INFO", $"MeetingStateChanged:- State: {state} ");
             RunOnUnityMainThread(() =>
             {
-                OnMeetingStateChangedCallback?.Invoke(state);
+                if(Enum.TryParse(state,true,out _meetState))
+                {
+                    OnMeetingStateChangedCallback?.Invoke(_meetState);
+                }
+                
             });
            
+        }
+
+        private void OnSpeakerChanged(string ParticipantId)
+        {
+            RunOnUnityMainThread(() =>
+            {
+                OnSpeakerChangedCallback?.Invoke(ParticipantId);
+            });
+
         }
 
         private void OnAudioDeviceChanged(string selectedDevice, string[] avaliableDeviceList)
@@ -311,6 +396,52 @@ namespace live.videosdk
             _avaliableAudioDevicesArray = obj;
         }
 
+
+        private void OnExternalCallHangup()
+        {
+            RunOnUnityMainThread(() =>
+            {
+                OnCallHangupCallback?.Invoke();
+            });
+        }
+
+        private void OnExternalCallRinging()
+        {
+            RunOnUnityMainThread(() =>
+            {
+                OnCallRingingCallback?.Invoke();
+            });
+        }
+
+        private void OnExternalCallStarted()
+        {
+            RunOnUnityMainThread(() =>
+            {
+                OnCallStartedCallback?.Invoke();
+            });
+        }
+
+        private void OnPausedAllStreams(string kind)
+        {
+            RunOnUnityMainThread(() =>
+            {
+                if (Enum.TryParse(kind, true, out StreamKind streamKind))
+                {
+                    OnPausedAllStreamsCallback?.Invoke(streamKind);
+                }
+            });
+        }
+
+        private void OnResumedAllStreams(string kind)
+        {
+            RunOnUnityMainThread(() =>
+            {
+                if (Enum.TryParse(kind, true, out StreamKind streamKind))
+                {
+                    OnResumedAllStreamsCallback?.Invoke(streamKind);
+                }
+            });
+        }
         #endregion
 
         internal static IUser GetParticipantById(string Id)
@@ -323,32 +454,27 @@ namespace live.videosdk
         }
 
     }
-
-    public interface IParticipant
+   
+    public enum VideoEncoderConfig
     {
-        string ParticipantId { get; }
-        string Name { get; }
-        bool IsLocal { get; }
-        string ToString();
+        h480p_w640p,
+        h720p_w960p,
+        h480p_w720p
     }
-    public class Participant : IParticipant
+
+    public enum MeetingState
     {
-        public string ParticipantId { get; }
-        public string Name { get; }
-        public bool IsLocal { get; }
+        NONE,
+        CONNECTING, //connection is in the process of being established
+        CONNECTED, //connection has been successfully established
+        RECONNECTING, //attempting to reconnect
+        DISCONNECTED
+    }
 
-        public Participant(string Id, string name, bool isLocal)
-        {
-            this.ParticipantId = Id;
-            this.Name = name;
-            this.IsLocal = isLocal;
-        }
-
-        public override string ToString()
-        {
-            return $"ParticipantId: {ParticipantId} Name: {Name} IsLocal: {IsLocal}";
-        }
-
+    public enum StreamKind
+    {
+        AUDIO,
+        VIDEO
     }
 
 }

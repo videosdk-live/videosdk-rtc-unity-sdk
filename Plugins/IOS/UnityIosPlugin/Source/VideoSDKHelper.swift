@@ -49,6 +49,15 @@ func OnExternalCallHangup()
 @_silgen_name("OnAudioDeviceChanged")
 func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: UnsafePointer<CChar>)
 
+@_silgen_name("OnSpeakerChanged")
+func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
+
+@_silgen_name("OnPausedAllStreams")
+func OnPausedAllStreams(_ kind: UnsafePointer<CChar>)
+
+@_silgen_name("OnResumedAllStreams")
+func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
+
 @available(iOS 14.0, *)
 @objc public class VideoSDKHelper: NSObject {
     
@@ -59,6 +68,7 @@ func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: 
     var webCamEnabled: Bool = false
     var micEnabled: Bool = false
     private var isCallConnected = false
+    private var isSpeakerMute = false
     
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
     private let compressionSettings: [CFString: Any] = [
@@ -69,40 +79,43 @@ func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: 
     
     private let callObserver = CXCallObserver()
     private var selectedAudioDevice: String?
+    private var encoderConfig: String = "h90p_w160p"
+    private var meetingState: MeetingState = .DISCONNECTED
     
     override init() {
         super.init()
+        VideoSDK.getAudioPermission()
+        VideoSDK.getVideoPermission()
         setupCallMonitoring()
-        setupAudioRouteMonitoring()
+//        setupAudioRouteMonitoring()
     }
     
     private func setupCallMonitoring() {
         callObserver.setDelegate(self, queue: nil)
     }
 
-    private func setupAudioRouteMonitoring() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleAudioRouteChange),
-            name: AVAudioSession.routeChangeNotification,
-            object: nil
-        )
-    }
+//    private func setupAudioRouteMonitoring() {
+//        NotificationCenter.default.addObserver(
+//            self,
+//            selector: #selector(handleAudioRouteChange),
+//            name: AVAudioSession.routeChangeNotification,
+//            object: nil
+//        )
+//    }
     
-    @objc public func joinMeeting(token: String, 
-                                 meetingId: String, 
-                                 participantName: String, 
-                                 micEnabled: Bool, 
-                                 webCamEnabled: Bool, 
+    @objc public func joinMeeting(token: String,
+                                 meetingId: String,
+                                 participantName: String,
+                                 micEnabled: Bool,
+                                 webCamEnabled: Bool,
                                  participantId: String? = nil,
                                  sdkName: String? = nil,
                                  sdkVersion: String? = nil) {
         VideoSDK.config(token: token)
         
         let customVideoTrack = webCamEnabled ? createCustomVideoTrack() : nil
-        
         self.meeting = VideoSDK.initMeeting(
-            meetingId: meetingId,
+            meetingId: "pbow-6vec-vahn",
             participantId: participantId ?? "",
             participantName: participantName,
             micEnabled: micEnabled,
@@ -136,12 +149,18 @@ func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: 
             // error callback
             return
         }
-        if status {
-            meeting.enableWebcam()
-            self.webCamEnabled = true
-        } else {
-            meeting.disableWebcam()
-            self.webCamEnabled = false
+        if status == self.webCamEnabled {
+            return
+        }
+        if meetingState == .CONNECTED {
+            if status {
+                let customVideoTrack = self.createCustomVideoTrack()
+                meeting.enableWebcam(customVideoStream: customVideoTrack)
+                self.webCamEnabled = true
+            } else {
+                meeting.disableWebcam()
+                self.webCamEnabled = false
+            }
         }
     }
     
@@ -150,12 +169,17 @@ func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: 
             // error callback
             return
         }
-        if status {
-            meeting.unmuteMic()
-            self.micEnabled = true
-        } else {
-            meeting.muteMic()
-            self.micEnabled = false
+        if status == self.micEnabled {
+            return
+        }
+        if meetingState == .CONNECTED {
+            if status {
+                meeting.unmuteMic()
+                self.micEnabled = true
+            } else {
+                meeting.muteMic()
+                self.micEnabled = false
+            }
         }
     }
     
@@ -174,9 +198,23 @@ func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: 
         return participantsData.toJSONString()
     }
     
+    @objc public func pauseAllStreams(kind: String) {
+        guard let meeting = meeting else {
+            return
+        }
+        meeting.pauseAllStreams(kind)
+    }
+    
+    @objc public func resumeAllStreams(kind: String) {
+        guard let meeting = meeting else {
+            return
+        }
+        meeting.resumeAllStreams(kind)
+    }
+    
     @objc public func pauseStream(participantId: String, kind: String) {
-        guard let participant = participants.first(where: { $0.id == participantId }) else {
-            print("Participant not found: \(participantId)")
+        guard let participant = participants.first(where: { $0.id == participantId }), meetingState == .CONNECTED else {
+            print("Participant not found: \(participantId) or Meeting is not connected")
             return
         }
         
@@ -199,8 +237,8 @@ func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: 
     }
     
     @objc public func resumeStream(participantId: String, kind: String) {
-        guard let participant = participants.first(where: { $0.id == participantId }) else {
-            print("Participant not found: \(participantId)")
+        guard let participant = participants.first(where: { $0.id == participantId }), meetingState == .CONNECTED else {
+            print("Participant not found: \(participantId) or Meeting is not connected")
             return
         }
         
@@ -238,6 +276,30 @@ func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: 
         meeting?.switchWebcam()
     }
     
+    @objc public func setVideoEncoderConfig(config : String) {
+        self.encoderConfig = config
+        guard let meeting = meeting else {
+            return
+        }
+        self.toggleWebCam(status: false)
+        self.toggleWebCam(status: true)
+    }
+    
+    @objc public func setSpeakerMute(status: Bool) {
+        self.isSpeakerMute = status
+        guard let meeting = meeting else { return }
+        
+        for participant in participants {
+            if !participant.isLocal {
+                if status {
+                    self.pauseStream(participantId: participant.id, kind: "audio")
+                } else {
+                    self.resumeStream(participantId: participant.id, kind: "audio")
+                }
+            }
+        }
+    }
+    
     private func participantToJson(_ participant: Participant) -> [String: Any] {
         return [
             "id": participant.id,
@@ -271,9 +333,9 @@ extension VideoSDKHelper: MeetingEventListener {
             
             let enabledLogs = attributes["enabledLogs"] as? Bool ?? false
             
-            OnMeetingJoined(meetingIdPtr, 
-                           idPtr, 
-                           namePtr, 
+            OnMeetingJoined(meetingIdPtr,
+                           idPtr,
+                           namePtr,
                            enabledLogs,
                            logEndPointPtr,
                            jwtKeyPtr,
@@ -319,8 +381,9 @@ extension VideoSDKHelper: MeetingEventListener {
         }
     }
     
-    public func onMeetingStateChanged(_ state: MeetingState) {
-        if let statePtr = (state.rawValue as NSString).utf8String {
+    public func onMeetingStateChanged(meetingState: MeetingState) {
+        self.meetingState = meetingState
+        if let statePtr = (meetingState.rawValue as NSString).utf8String {
             OnMeetingStateChanged(statePtr)
         }
     }
@@ -330,48 +393,79 @@ extension VideoSDKHelper: MeetingEventListener {
             OnError(errorPtr)
         }
     }
+    
+    public func onSpeakerChanged(participantId: String?) {
+        if let participantId = participantId {
+            if let idpPtr = (participantId as NSString).utf8String {
+                OnSpeakerChanged(idpPtr)
+            }
+        }
+    }
+    
+    public func onPausedAllStreams(kind: String) {
+        if let kindPtr = (kind as NSString).utf8String {
+            OnPausedAllStreams(kindPtr)
+        }
+    }
+    
+    public func onResumedAllStreams(kind: String) {
+        if let kindPtr = (kind as NSString).utf8String {
+            OnResumedAllStreams(kindPtr)
+        }
+    }
 
-   @objc private func handleAudioRouteChange(notification: Notification) {
-       guard let userInfo = notification.userInfo,
-             let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
-             let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
-           return
-       }
-       
-       switch reason {
-       case .newDeviceAvailable, .oldDeviceUnavailable, .override:
-           let currentRoute = AVAudioSession.sharedInstance().currentRoute
-           let currentDevice = currentRoute.inputs.first?.portName ?? ""
-           let deviceList = VideoSDK.getAudioDevices()
-           
-           let deviceListString = deviceList.description
-           if let devicePtr = (currentDevice as NSString).utf8String,
-              let listPtr = (deviceListString as NSString).utf8String {
-//               OnAudioDeviceChanged(devicePtr, listPtr)
-           }
-       default:
-           break
-       }
-   }
+//   @objc private func handleAudioRouteChange(notification: Notification) {
+//       guard let userInfo = notification.userInfo,
+//             let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+//             let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
+//           return
+//       }
+//       
+//       switch reason {
+//       case .newDeviceAvailable, .oldDeviceUnavailable, .override:
+//           let currentRoute = AVAudioSession.sharedInstance().currentRoute
+//           let currentDevice = currentRoute.inputs.first?.portName ?? ""
+////           let deviceList = VideoSDK.getAudioDevices()
+//           
+//           let deviceListString = deviceList.description
+//           if let devicePtr = (currentDevice as NSString).utf8String,
+//              let listPtr = (deviceListString as NSString).utf8String {
+////               OnAudioDeviceChanged(devicePtr, listPtr)
+////               print(currentDevice, deviceList)
+//           }
+//       default:
+//           break
+//       }
+//   }
 }
 
 @available(iOS 14.0, *)
 extension VideoSDKHelper: ParticipantEventListener {
     
     public func onStreamEnabled(_ stream: MediaStream, forParticipant participant: Participant) {
+        var kind: String = ""
         if stream.kind == .state(value: .video) {
+            kind = "video"
             if participant.isLocal {
                 self.webCamEnabled = true
             }
+            if let idPtr = (participant.id as NSString).utf8String,
+               let dataPtr = (kind as NSString).utf8String {
+                OnStreamEnabled(idPtr, dataPtr)
+            }
             HandleVideoStream(videoTrack: stream.track as? RTCVideoTrack, participant: participant)
         } else if stream.kind == .state(value: .audio) {
+            kind = "audio"
             if participant.isLocal {
                 self.micEnabled = true
             }
-            
             if let idPtr = (participant.id as NSString).utf8String,
-               let dataPtr = ("audio" as NSString).utf8String {
+               let dataPtr = (kind as NSString).utf8String {
                 OnStreamEnabled(idPtr, dataPtr)
+            }
+            
+            if self.isSpeakerMute {
+                self.pauseStream(participantId: participant.id, kind: kind)
             }
         }
     }
@@ -386,7 +480,6 @@ extension VideoSDKHelper: ParticipantEventListener {
         }
         
         var kind: String = ""
-        let participantJSON = participantToJson(participant)
         
         if stream.kind == .state(value: .video) {
             kind = "video"
@@ -426,34 +519,38 @@ extension VideoSDKHelper: ParticipantEventListener {
             guard let self = self,
                   let participant = weakParticipant,
                   renderer != nil else { return }
-            
             DispatchQueue.global(qos: .userInitiated).async {
                 autoreleasepool {
-                    // Process only every other frame to reduce memory pressure
                     if frame.timeStampNs % 2 != 0 {
                         return
                     }
                     
-                    guard let i420Buffer = frame.buffer as? RTCI420Buffer else { return }
+                    var pixelBuffer: CVPixelBuffer?
+                    
+                    if let i420Buffer = frame.buffer as? RTCI420Buffer {
+                        pixelBuffer = self.createPixelBuffer(from: i420Buffer)
+                    } else if let cvPixelBuffer = frame.buffer as? RTCCVPixelBuffer {
+                        pixelBuffer = cvPixelBuffer.pixelBuffer
+                    }
+                    
+                    guard let finalPixelBuffer = pixelBuffer else {
+                        return
+                    }
                     
                     autoreleasepool {
-                        guard let pixelBuffer = self.createPixelBuffer(from: i420Buffer) else { return }
+                        guard let imageData = self.compressFrame(pixelBuffer: finalPixelBuffer, isLocal: participant.isLocal) else {
+                            return
+                        }
                         
-                        autoreleasepool {
-                            guard let imageData = self.compressFrame(pixelBuffer: pixelBuffer) else { return }
-                            
-                            DispatchQueue.main.async { [weak self] in
-                                guard self != nil else { return }
-                                if let idPtr = (participant.id as NSString).utf8String {
-                                    imageData.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
-                                        let bytePtr = bytes.baseAddress!.assumingMemoryBound(to: UInt8.self)
-                                        OnVideoFrameReceived(idPtr, bytePtr, Int32(imageData.count))
-                                    }
+                        DispatchQueue.main.async { [weak self] in
+                            guard self != nil else { return }
+                            if let idPtr = (participant.id as NSString).utf8String {
+                                imageData.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
+                                    let bytePtr = bytes.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                                    OnVideoFrameReceived(idPtr, bytePtr, Int32(imageData.count))
                                 }
                             }
                         }
-                        
-                        CVPixelBufferUnlockBaseAddress(pixelBuffer, [])
                     }
                 }
             }
@@ -462,20 +559,20 @@ extension VideoSDKHelper: ParticipantEventListener {
         videoTrack.add(renderer)
     }
 
-    func compressFrame(pixelBuffer: CVPixelBuffer) -> Data? {
+
+    func compressFrame(pixelBuffer: CVPixelBuffer, isLocal: Bool) -> Data? {
         CVPixelBufferLockBaseAddress(pixelBuffer, [])
         
         return autoreleasepool { () -> Data? in
             let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+            let scale = 0.75
             
-            // Scale down the image to reduce memory usage
-            let scale = 0.75 // Reduce to 75% of original size
             let scaledExtent = ciImage.extent.applying(CGAffineTransform(scaleX: scale, y: scale))
-            let scaledImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
             
-            guard let cgImage = ciContext.createCGImage(scaledImage, from: scaledExtent,
+            guard let cgImage = ciContext.createCGImage(ciImage, from: scaledExtent,
                                                       format: .RGBA8,
                                                       colorSpace: CGColorSpaceCreateDeviceRGB()) else {
+                print("Failed to create CGImage")
                 return nil
             }
             
@@ -559,7 +656,18 @@ extension VideoSDKHelper: ParticipantEventListener {
     }
     
     func createCustomVideoTrack() -> CustomRTCMediaStream? {
-        guard let customVideoTrack = try? VideoSDK.createCameraVideoTrack(encoderConfig: .h720p_w1280p, facingMode: .front, multiStream: true) else {
+        var VideoencoderConfig: CustomVideoTrackConfig
+        switch encoderConfig {
+        case "h480p_w640p":
+            VideoencoderConfig = .h480p_w640p
+        case "h720p_w960p":
+            VideoencoderConfig = .h720p_w1280p
+        case "h480p_w720p":
+            VideoencoderConfig = .h480p_w640p
+        default:
+            VideoencoderConfig = .h90p_w160p
+        }
+        guard let customVideoTrack = try? VideoSDK.createCameraVideoTrack(encoderConfig: VideoencoderConfig, facingMode: .front, multiStream: true) else {
             return nil
         }
         return customVideoTrack
@@ -570,7 +678,6 @@ extension VideoSDKHelper: ParticipantEventListener {
 extension VideoSDKHelper: CXCallObserverDelegate {
     
     public func callObserver(_ callObserver: CXCallObserver, callChanged call: CXCall) {
-        // Only handle incoming calls
         if !call.isOutgoing {
             if call.hasEnded {
                 isCallConnected = false

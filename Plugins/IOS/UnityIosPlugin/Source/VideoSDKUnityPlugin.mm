@@ -24,6 +24,9 @@ typedef void (*OnExternalCallStartedDelegate)();
 typedef void (*OnExternalCallRingingDelegate)();
 typedef void (*OnExternalCallHangupDelegate)();
 typedef void (*OnAudioDeviceChangedDelegate)(const char* selectedDevice, const char* deviceList);
+typedef void (*OnSpeakerChangedDelegate)(const char* id);
+typedef void (*onPausedAllStreamsDelegate)(const char* kind);
+typedef void (*onResumedAllStreamsDelegate)(const char* kind);
 
 static OnMeetingJoinedDelegate onMeetingJoinedCallback = NULL;
 static OnMeetingLeftDelegate onMeetingLeftCallback = NULL;
@@ -38,6 +41,9 @@ static OnExternalCallStartedDelegate onExternalCallStartedCallback = NULL;
 static OnExternalCallRingingDelegate onExternalCallRingingCallback = NULL;
 static OnExternalCallHangupDelegate onExternalCallHangupCallback = NULL;
 static OnAudioDeviceChangedDelegate onAudioDeviceChangedCallback = NULL;
+static OnSpeakerChangedDelegate onSpeakerChangedCallback = NULL;
+static onPausedAllStreamsDelegate onPausedAllStreamsCallback = NULL;
+static onResumedAllStreamsDelegate onResumedAllStreamsCallback = NULL;
 
 #pragma mark - Functions called by unity
 
@@ -75,6 +81,16 @@ void toggleMic(bool status, const char* Id) {
     [[VideoSDKHelper shared] toggleMicWithStatus:status];
 }
 
+void pauseAllStreams(const char* kind) {
+    NSString *kindStr = [NSString stringWithUTF8String:kind];
+    [[VideoSDKHelper shared] pauseAllStreamsWithKind:kindStr];
+}
+
+void resumeAllStreams(const char* kind) {
+    NSString *kindStr = [NSString stringWithUTF8String:kind];
+    [[VideoSDKHelper shared] resumeAllStreamsWithKind:kindStr];
+}
+
 void pauseStream(const char* participantId, const char* kind) {
     NSString *participantIdStr = [NSString stringWithUTF8String:participantId];
     NSString *kindStr = [NSString stringWithUTF8String:kind];
@@ -102,6 +118,15 @@ void changeVideoDevice() {
     [[VideoSDKHelper shared] changeVideoDevice];
 }
 
+void setVideoEncoderConfig(const char* config) {
+    NSString *configStr = [NSString stringWithUTF8String:config];
+    [[VideoSDKHelper shared] setVideoEncoderConfigWithConfig:configStr];
+}
+
+void setSpeakerMute(bool status) {
+    [[VideoSDKHelper shared] setSpeakerMuteWithStatus:status];
+}
+
 #pragma mark - Register Callback function
 
 void RegisterMeetingCallbacks(
@@ -111,7 +136,12 @@ void RegisterMeetingCallbacks(
     OnParticipantLeftDelegate onParticipantLeft,
     OnMeetingStateChangedDelegate onMeetingStateChanged,
     OnErrorDelegate onError,
-    OnAudioDeviceChangedDelegate onAudioDeviceChanged) {
+    OnSpeakerChangedDelegate onSpeakerChanged,
+    OnExternalCallStartedDelegate onExternalCallStarted,
+    OnExternalCallRingingDelegate onExternalCallRinging,
+    OnExternalCallHangupDelegate onExternalCallHangup,
+    onPausedAllStreamsDelegate onPausedAllStreams,
+    onResumedAllStreamsDelegate onResumedAllStreams) {
     
     onMeetingJoinedCallback = onMeetingJoined;
     onMeetingLeftCallback = onMeetingLeft;
@@ -119,7 +149,12 @@ void RegisterMeetingCallbacks(
     onParticipantLeftCallback = onParticipantLeft;
     onMeetingStateChangedCallback = onMeetingStateChanged;
     onErrorCallback = onError;
-    onAudioDeviceChangedCallback = onAudioDeviceChanged;
+    onSpeakerChangedCallback = onSpeakerChanged;
+    onExternalCallStartedCallback = onExternalCallStarted;
+    onExternalCallRingingCallback = onExternalCallRinging;
+    onExternalCallHangupCallback = onExternalCallHangup;
+    onPausedAllStreamsCallback = onPausedAllStreams;
+    onResumedAllStreamsCallback = onResumedAllStreams;
     
     NSLog(@"Meeting callbacks registered successfully");
 }
@@ -136,17 +171,17 @@ void RegisterUserCallbacks(
     NSLog(@"Stream callbacks registered successfully");
 }
 
-void RegisterCallStateCallbacks(
-    OnExternalCallStartedDelegate onExternalCallStarted,
-    OnExternalCallRingingDelegate onExternalCallRinging,
-    OnExternalCallHangupDelegate onExternalCallHangup) {
-    
-    onExternalCallStartedCallback = onExternalCallStarted;
-    onExternalCallRingingCallback = onExternalCallRinging;
-    onExternalCallHangupCallback = onExternalCallHangup;
-    
-    NSLog(@"Call state callbacks registered successfully");
-}
+//void RegisterCallStateCallbacks(
+//    OnExternalCallStartedDelegate onExternalCallStarted,
+//    OnExternalCallRingingDelegate onExternalCallRinging,
+//    OnExternalCallHangupDelegate onExternalCallHangup) {
+//    
+//    onExternalCallStartedCallback = onExternalCallStarted;
+//    onExternalCallRingingCallback = onExternalCallRinging;
+//    onExternalCallHangupCallback = onExternalCallHangup;
+//    
+//    NSLog(@"Call state callbacks registered successfully");
+//}
 
 #pragma mark - Callback to Unity
 
@@ -225,6 +260,24 @@ void OnExternalCallHangup() {
 void OnAudioDeviceChanged(const char* selectedDevice, const char* deviceList) {
     if (onAudioDeviceChangedCallback) {
         onAudioDeviceChangedCallback(selectedDevice, deviceList);
+    }
+}
+
+void OnSpeakerChanged(const char* id) {
+    if (onSpeakerChangedCallback) {
+        onSpeakerChangedCallback(id);
+    }
+}
+
+void OnPausedAllStreams(const char* kind) {
+    if (onPausedAllStreamsCallback) {
+        onPausedAllStreamsCallback(kind);
+    }
+}
+
+void OnResumedAllStreams(const char* kind) {
+    if (onResumedAllStreamsCallback) {
+        onResumedAllStreamsCallback(kind);
     }
 }
 

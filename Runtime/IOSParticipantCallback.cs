@@ -29,9 +29,11 @@ namespace live.videosdk
             RegisterUserCallbacks(OnStreamEnabled, OnStreamDisabled, OnVideoFrameReceived);
         }
 
-        private static event Action<string,string> OnStreamEnabledCallback;
-        private static event Action<string,string> OnStreamDisabledCallback;
-        private static event Action<string,byte[]> OnVideoFrameReceivedCallback;
+        private event Action<string,string> OnStreamEnabledCallback;
+        private event Action<string,string> OnStreamDisabledCallback;
+        private event Action<string,byte[]> OnVideoFrameReceivedCallback;
+        private event Action<string, string> OnResumeStreamCallback;
+        private event Action<string, string> OnPauseStreamCallback;
 
         public void SubscribeToStreamEnabled(Action<string,string> callback)
         {
@@ -60,6 +62,26 @@ namespace live.videosdk
         {
             OnVideoFrameReceivedCallback -= callback;
         }
+        public void SubscribeToPauseStream(Action<string, string> callback)
+        {
+            OnPauseStreamCallback += callback;
+        }
+
+        public void UnsubscribeFromPauseStream(Action<string, string> callback)
+        {
+            OnPauseStreamCallback -= callback;
+        }
+
+        public void SubscribeToResumeStream(Action<string, string> callback)
+        {
+            OnResumeStreamCallback += callback;
+        }
+
+        public void UnsubscribeFromResumeStream(Action<string, string> callback)
+        {
+            OnResumeStreamCallback -= callback;
+        }
+
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnStreamEnabledDelegate(string Id, string data);
@@ -67,6 +89,11 @@ namespace live.videosdk
         public delegate void OnStreamDisabledDelegate(string Id, string data);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnVideoFrameReceivedDelegate(string Id, IntPtr data, int length);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnPauseStreamDelegate(string Id, string kind);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnResumeStreamDelegate(string Id, string kind);
+
 
         // Bind the delegates to native functions
         [DllImport("__Internal")]
@@ -79,22 +106,32 @@ namespace live.videosdk
         [AOT.MonoPInvokeCallback(typeof(OnStreamEnabledDelegate))]
         private static void OnStreamEnabled(string id,string jsonString)
         {
-            OnStreamEnabledCallback?.Invoke(id,jsonString);
+            Instance.OnStreamEnabledCallback?.Invoke(id,jsonString);
         }
         [AOT.MonoPInvokeCallback(typeof(OnStreamEnabledDelegate))]
         private static void OnStreamDisabled(string id, string jsonString)
         {
-            OnStreamDisabledCallback?.Invoke(id, jsonString);
+            Instance.OnStreamDisabledCallback?.Invoke(id, jsonString);
         }
         [AOT.MonoPInvokeCallback(typeof(OnVideoFrameReceivedDelegate))]
         private static void OnVideoFrameReceived(string id, IntPtr data, int length)
         {
             byte[] frameBytes = new byte[length];
             Marshal.Copy(data, frameBytes, 0, length);
-            OnVideoFrameReceivedCallback?.Invoke(id, frameBytes);
+            Instance.OnVideoFrameReceivedCallback?.Invoke(id, frameBytes);
         }
 
+        //[AOT.MonoPInvokeCallback(typeof(OnPauseStreamDelegate))]
+        //private static void OnPauseStream(string id, string kind)
+        //{
+        //    Instance.OnPauseStreamCallback?.Invoke(id, kind);
+        //}
 
+        //[AOT.MonoPInvokeCallback(typeof(OnResumeStreamDelegate))]
+        //private static void OnResumeStream(string id, string kind)
+        //{
+        //    Instance.OnResumeStreamCallback?.Invoke(id, kind);
+        //}
     }
 #endif
 }

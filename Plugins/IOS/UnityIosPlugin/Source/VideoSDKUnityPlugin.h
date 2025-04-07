@@ -25,6 +25,10 @@ void OnExternalCallRinging();
 void OnExternalCallHangup();
 
 void OnAudioDeviceChanged(const char* selectedDevice, const char* deviceList);
+void OnSpeakerChanged(const char* id);
+
+void OnPausedAllStreams(const char* kind);
+void OnResumedAllStreams(const char* kind);
 
 #ifdef __cplusplus
 }

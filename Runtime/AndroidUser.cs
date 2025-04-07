@@ -15,18 +15,22 @@ namespace live.videosdk
         public bool CamEnabled { get; private set; }
 
         public event Action<byte[]> OnVideoFrameReceivedCallback;
-        public event Action<string> OnStreamEnabledCallaback;
-        public event Action<string> OnStreamDisabledCallaback;
+        public event Action<StreamKind> OnStreamEnabledCallaback;
+        public event Action<StreamKind> OnStreamDisabledCallaback;
         public event Action OnParticipantLeftCallback;
+        public event Action<StreamKind> OnStreamPausedCallaback;
+        public event Action<StreamKind> OnStreamResumedCallaback;
         private IMeetingControlls _meetControlls;
-        public AndroidUser(Participant participantData, IMeetingControlls meetControlls)
+        private IVideoSDKDTO _videoSdkDto;
+        public AndroidUser(IParticipant participantData, IMeetingControlls meetControlls,IVideoSDKDTO videoSDK)
         {
             if (participantData != null)
             {
                 IsLocal = participantData.IsLocal;
-                ParticipantId = participantData.ParticipantId;
+                ParticipantId = participantData.Id;
                 ParticipantName = participantData.Name;
                 _meetControlls = meetControlls;
+                _videoSdkDto = videoSDK;
                 RegiesterCallBack();
             }
 
@@ -48,6 +52,7 @@ namespace live.videosdk
 
         public override void OnStreamEnabled(string kind)
         {
+            _videoSdkDto.SendDTO("INFO", $"StreamEnabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
             if (kind.ToLower().Equals("video"))
             {
                 CamEnabled = true;
@@ -58,12 +63,17 @@ namespace live.videosdk
             }
             RunOnUnityMainThread(() =>
             {
-                OnStreamEnabledCallaback?.Invoke(kind);
+                if (Enum.TryParse(kind, true, out StreamKind streamKind))
+                {
+
+                    OnStreamEnabledCallaback?.Invoke(streamKind);
+                }
             });
         }
 
         public override void OnStreamDisabled(string kind)
         {
+            _videoSdkDto.SendDTO("INFO", $"StreamDisabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName} ");
             if (kind.ToLower().Equals("video"))
             {
                 CamEnabled = false;
@@ -74,10 +84,57 @@ namespace live.videosdk
             }
             RunOnUnityMainThread(() =>
             {
-                OnStreamDisabledCallaback?.Invoke(kind);
+                if (Enum.TryParse(kind, true, out StreamKind streamKind))
+                {
+
+                    OnStreamDisabledCallaback?.Invoke(streamKind);
+                }
             });
             
         }
+
+        //public override void OnPauseStream(string kind)
+        //{
+        //    _videoSdkDto.SendDTO("INFO", $"PauseStream:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName} ");
+        //    if (kind.ToLower().Equals("video"))
+        //    {
+        //        CamEnabled = false;
+        //    }
+        //    else if (kind.ToLower().Equals("audio"))
+        //    {
+        //        MicEnabled = false;
+        //    }
+        //    RunOnUnityMainThread(() =>
+        //    {
+        //        if (Enum.TryParse(kind, true, out StreamKind streamKind))
+        //        {
+
+        //            OnStreamDisabledCallaback?.Invoke(streamKind);
+        //        }
+        //    });
+
+        //}
+        
+        //public override void OnResumeStream(string kind)
+        //{
+        //    _videoSdkDto.SendDTO("INFO", $"ResumeStream:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName} ");
+        //    if (kind.ToLower().Equals("video"))
+        //    {
+        //        CamEnabled = false;
+        //    }
+        //    else if (kind.ToLower().Equals("audio"))
+        //    {
+        //        MicEnabled = false;
+        //    }
+        //    RunOnUnityMainThread(() =>
+        //    {
+        //        if (Enum.TryParse(kind, true, out StreamKind streamKind))
+        //        {
+        //            OnStreamDisabledCallaback?.Invoke(streamKind);
+        //        }
+        //    });
+
+        //}
 
         public override void OnVideoFrameReceived(string videoStream)
         {
@@ -117,24 +174,24 @@ namespace live.videosdk
             _meetControlls.ToggleMic(status,ParticipantId);
         }
 
-        public void PauseStream(string kind)
+        public void PauseStream(StreamKind kind)
         {
             if (_meetControlls == null)
             {
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.PauseStream(ParticipantId,kind);
+            _meetControlls.PauseStream(kind, ParticipantId);
         }
 
-        public void ResumeStream(string kind)
+        public void ResumeStream(StreamKind kind)
         {
             if (_meetControlls == null)
             {
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.ResumeStream(ParticipantId, kind);
+            _meetControlls.ResumeStream(kind, ParticipantId);
         }
 
         #endregion
@@ -158,6 +215,7 @@ namespace live.videosdk
             }
         }
 
+        
     }
 #endif
 }

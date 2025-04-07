@@ -4,8 +4,9 @@
     {
         void ToggleMic(bool status, string Id);
         void ToggleWebCam(bool status, string Id);
-        void PauseStream(string paticipantId,string kind);
-        void ResumeStream(string participantId, string kind);
+        void PauseStream(StreamKind kind, string Id);
+        void ResumeStream(StreamKind kind, string Id);
+       
     }
 }
 

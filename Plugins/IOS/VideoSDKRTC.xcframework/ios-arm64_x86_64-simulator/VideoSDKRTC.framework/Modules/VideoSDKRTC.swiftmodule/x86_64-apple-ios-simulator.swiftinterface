@@ -6,6 +6,7 @@ import ARKit
 import AVFoundation
 import AVKit
 import CoreImage.CIFilterBuiltins
+import CallKit
 import CoreImage
 import CoreMedia
 import Darwin
@@ -1147,7 +1148,7 @@ public struct Google_Protobuf_ExtensionRangeOptions : VideoSDKRTC.ExtensibleMess
       get
       set
     }
-    public var hasFullName: Swift.Bool {
+    public var haMediasoupllName: Swift.Bool {
       get
     }
     public mutating func clearFullName()
@@ -4089,6 +4090,30 @@ public struct LivestreamOutput : Swift.Codable {
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
 }
+public let defaultRatchetSalt: Swift.String
+public let defaultMagicBytes: Swift.String
+public let defaultRatchetWindowSize: Swift.Int32
+public let defaultFailureTolerance: Swift.Int32
+public let defaultKeyRingSize: Swift.Int32
+public let defaultDiscardFrameWhenCryptorNotReady: Swift.Bool
+@objc final public class KeyProviderOptions : ObjectiveC.NSObject, Swift.Sendable {
+  final public let sharedKey: Swift.Bool
+  final public let ratchetSalt: Foundation.Data
+  final public let ratchetWindowSize: Swift.Int32
+  final public let uncryptedMagicBytes: Foundation.Data
+  final public let failureTolerance: Swift.Int32
+  final public let keyRingSize: Swift.Int32
+  final public let discardFrameWhenCryptorNotReady: Swift.Bool
+  public init(sharedKey: Swift.Bool = true, ratchetSalt: Foundation.Data = defaultRatchetSalt.data(using: .utf8)!, ratchetWindowSize: Swift.Int32 = defaultRatchetWindowSize, uncryptedMagicBytes: Foundation.Data = defaultMagicBytes.data(using: .utf8)!, failureTolerance: Swift.Int32 = defaultFailureTolerance, keyRingSize: Swift.Int32 = defaultKeyRingSize, discardFrameWhenCryptorNotReady: Swift.Bool = defaultDiscardFrameWhenCryptorNotReady)
+  @objc deinit
+}
+final public class BaseKeyProvider {
+  public init(keyProviderOptions: VideoSDKRTC.KeyProviderOptions? = nil)
+  final public func setSharedKey(_ key: Swift.String)
+  final public func exportSharedKey() -> Foundation.Data?
+  final public func ratchetSharedKey() -> Foundation.Data?
+  @objc deinit
+}
 public protocol Logger {
   func eventBuilder(name: Swift.String) -> any VideoSDKRTC.EventBuilder
   func logRecordBuilder() -> any VideoSDKRTC.LogRecordBuilder
@@ -4620,6 +4645,7 @@ public enum MediaType : Swift.Equatable {
   public var pinnedParticipants: [Swift.String : VideoSDKRTC.ParticipantPinState] {
     get
   }
+  public var meetingState: VideoSDKRTC.MeetingState
   public var hlsUrls: VideoSDKRTC.HLSUrl?
   public var hlsState: VideoSDKRTC.HLSState
   public var liveStreamState: VideoSDKRTC.LiveStreamState
@@ -4663,7 +4689,7 @@ extension VideoSDKRTC.Meeting {
   public func stopHLS()
   public func startTranscription(config: VideoSDKRTC.TranscriptionConfig? = nil)
   public func stopTranscription()
-  public func changeMode(_ mode: VideoSDKRTC.Mode)
+  public func changeMode(_ mode: VideoSDKRTC.Mode) async
   @available(iOS 13.0.0, *)
   public func enableScreenShare() async
   @available(iOS 13.0.0, *)
@@ -4679,6 +4705,10 @@ extension VideoSDKRTC.Meeting {
 extension VideoSDKRTC.Meeting {
   public func startWhiteboard()
   public func stopWhiteboard()
+}
+extension VideoSDKRTC.Meeting {
+  public func pauseAllStreams(_ kind: Swift.String? = nil)
+  public func resumeAllStreams(_ kind: Swift.String? = nil)
 }
 extension VideoSDKRTC.Meeting {
   public func setAttributes(_ name: Swift.String, _ version: Swift.String)
@@ -4717,6 +4747,13 @@ public protocol MeetingEventListener : AnyObject {
   func onMicChanged(selectedDevice: Swift.String)
   func onWhiteboardStarted(url: Foundation.URL)
   func onWhiteboardStopped()
+  func onExternalCallRinging(callType: Swift.String)
+  func onExternalCallAnswered(callType: Swift.String)
+  func onExternalCallRejected(callType: Swift.String)
+  func onExternalCallHangup(callType: Swift.String)
+  func onPausedAllStreams(kind: Swift.String)
+  func onResumedAllStreams(kind: Swift.String)
+  func e2eeStateChanged()
   func onCharacterJoined(character: VideoSDKRTC.AICharacter)
   func onCharacterLeft(character: VideoSDKRTC.AICharacter)
   func onCharacterMessage(message: VideoSDKRTC.CharacterMessage)
@@ -4747,13 +4784,20 @@ extension VideoSDKRTC.MeetingEventListener {
   public func onMicChanged(selectedDevice: Swift.String)
   public func onWhiteboardStarted(url: Foundation.URL)
   public func onWhiteboardStopped()
+  public func onExternalCallRinging(callType: Swift.String)
+  public func onExternalCallAnswered(callType: Swift.String)
+  public func onExternalCallRejected(callType: Swift.String)
+  public func onExternalCallHangup(callType: Swift.String)
+  public func onPausedAllStreams(kind: Swift.String)
+  public func onResumedAllStreams(kind: Swift.String)
+  public func e2eeStateChanged()
   public func onCharacterJoined(character: VideoSDKRTC.AICharacter)
   public func onCharacterLeft(character: VideoSDKRTC.AICharacter)
   public func onCharacterMessage(message: VideoSDKRTC.CharacterMessage)
   public func onCharacterStateChanged(characterStateChange: VideoSDKRTC.CharacterStateChange)
 }
 public enum MeetingState : Swift.String {
-  case CONNECTING, CONNECTED, CLOSING, CLOSED, CANCELLED, RECONNECTING
+  case CONNECTING, CONNECTED, DISCONNECTED, RECONNECTING
   public init?(rawValue: Swift.String)
   public typealias RawValue = Swift.String
   public var rawValue: Swift.String {
@@ -4761,7 +4805,13 @@ public enum MeetingState : Swift.String {
   }
 }
 public enum Mode : Swift.String {
-  case CONFERENCE, VIEWER
+  @available(*, deprecated, message: "Use SEND_AND_RECV instead.")
+  case CONFERENCE
+  @available(*, deprecated, message: "Use SIGNALLING_ONLY instead.")
+  case VIEWER
+  case SEND_AND_RECV
+  case SIGNALLING_ONLY
+  case RECV_ONLY
   public init?(rawValue: Swift.String)
   public typealias RawValue = Swift.String
   public var rawValue: Swift.String {
@@ -4863,6 +4913,14 @@ public enum PreferredCodec : Swift.String {
 }
 public enum WhiteBoardState : Swift.String {
   case WHITEBOARD_STARTED, WHITEBOARD_STOPPED
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public enum E2EEState : Swift.String {
+  case New, EncryptionFailed, DecryptionFailed, MissingKey, KeyRatcheted, InternalError
   public init?(rawValue: Swift.String)
   public typealias RawValue = Swift.String
   public var rawValue: Swift.String {
@@ -8655,8 +8713,10 @@ public enum VideoQuality : Swift.String, Swift.CaseIterable {
   }
 }
 @_hasMissingDesignatedInitializers final public class VideoSDK {
+  public static var baseKeyProvider: VideoSDKRTC.BaseKeyProvider?
   public static func config(token: Swift.String)
-  public static func initMeeting(meetingId: Swift.String, participantId: Swift.String = "", participantName: Swift.String = "Guest", micEnabled: Swift.Bool = true, webcamEnabled: Swift.Bool = true, customCameraVideoStream: VideoSDKRTC.CustomRTCMediaStream? = nil, customAudioTrack: VideoSDKRTC.CustomRTCMediaStream? = nil, multiStream: Swift.Bool? = true, mode: VideoSDKRTC.Mode? = .CONFERENCE, preferredProtocol: VideoSDKRTC.PreferredProtocol? = PreferredProtocol.UDP_OVER_TCP, signalingBaseUrl: Swift.String? = nil, metaData: [Swift.String : Any]? = [:]) -> VideoSDKRTC.Meeting
+  public static func initMeeting(meetingId: Swift.String, participantId: Swift.String = "", participantName: Swift.String = "Guest", micEnabled: Swift.Bool = true, webcamEnabled: Swift.Bool = true, customCameraVideoStream: VideoSDKRTC.CustomRTCMediaStream? = nil, customAudioTrack: VideoSDKRTC.CustomRTCMediaStream? = nil, multiStream: Swift.Bool? = true, mode: VideoSDKRTC.Mode? = .SEND_AND_RECV, preferredProtocol: VideoSDKRTC.PreferredProtocol? = PreferredProtocol.UDP_OVER_TCP, signalingBaseUrl: Swift.String? = nil, metaData: [Swift.String : Any]? = [:], secureKey: Swift.String? = nil) -> VideoSDKRTC.Meeting
+  public static func setKeyProvider(_ baseKeyProvider: VideoSDKRTC.BaseKeyProvider)
   public static func createCameraVideoTrack(encoderConfig: VideoSDKRTC.CustomVideoTrackConfig? = .h360p_w640p, facingMode: AVFoundation.AVCaptureDevice.Position? = .front, multiStream: Swift.Bool? = true, codec: VideoSDKRTC.PreferredCodec? = .VP8) throws -> VideoSDKRTC.CustomRTCMediaStream?
   public static func createAudioTrack(noiseConfig: VideoSDKRTC.noiseConfig?) throws -> VideoSDKRTC.CustomRTCMediaStream?
   @objc deinit
@@ -9040,6 +9100,9 @@ extension VideoSDKRTC.PreferredCodec : Swift.RawRepresentable {}
 extension VideoSDKRTC.WhiteBoardState : Swift.Equatable {}
 extension VideoSDKRTC.WhiteBoardState : Swift.Hashable {}
 extension VideoSDKRTC.WhiteBoardState : Swift.RawRepresentable {}
+extension VideoSDKRTC.E2EEState : Swift.Equatable {}
+extension VideoSDKRTC.E2EEState : Swift.Hashable {}
+extension VideoSDKRTC.E2EEState : Swift.RawRepresentable {}
 extension VideoSDKRTC.MetricExporterResultCode : Swift.Equatable {}
 extension VideoSDKRTC.MetricExporterResultCode : Swift.Hashable {}
 extension VideoSDKRTC.OpenTelemetryContextKeys : Swift.Equatable {}

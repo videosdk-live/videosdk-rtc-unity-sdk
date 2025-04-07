@@ -101,6 +101,67 @@ namespace live.videosdk
             _meetCallback.UnsubscribeFromFetchAudioDevice(callback);
         }
 
+        public void SubscribeToSpeakerChanged(Action<string> callback)
+        {
+            _meetCallback.SubscribeToSpeakerChanged(callback);
+        }
+
+        public void UnsubscribeFromSpeakerChanged(Action<string> callback)
+        {
+            _meetCallback.UnsubscribeFromSpeakerChanged(callback);
+        }
+
+        public void SubscribeToExternalCallRinging(Action callback)
+        {
+            _meetCallback.SubscribeToExternalCallRinging(callback);
+        }
+
+        public void UnsubscribeFromExternalCallRinging(Action callback)
+        {
+            _meetCallback.UnsubscribeFromExternalCallRinging(callback);
+        }
+
+        public void SubscribeToExternalCallStarted(Action callback)
+        {
+            _meetCallback.SubscribeToExternalCallStarted(callback);
+        }
+
+        public void UnsubscribeFromExternalCallStarted(Action callback)
+        {
+            _meetCallback.UnsubscribeFromExternalCallStarted(callback);
+        }
+
+        public void SubscribeToExternalCallHangup(Action callback)
+        {
+            _meetCallback.SubscribeToExternalCallHangup(callback);
+        }
+
+        public void UnsubscribeFromExternalCallHangup(Action callback)
+        {
+            _meetCallback.UnsubscribeFromExternalCallHangup(callback);
+        }
+
+        public void SubscribeToPausedAllStreams(Action<string> callback)
+        {
+            _meetCallback.SubscribeToPausedAllStreams(callback);
+        }
+
+        public void UnsubscribeFromPausedAllStreams(Action<string> callback)
+        {
+            _meetCallback.UnsubscribeFromPausedAllStreams(callback);
+        }
+
+        public void SubscribeToResumedAllStreams(Action<string> callback)
+        {
+            _meetCallback.SubscribeToResumedAllStreams(callback);
+        }
+
+        public void UnsubscribeFromResumedAllStreams(Action<string> callback)
+        {
+            _meetCallback.UnsubscribeFromResumedAllStreams(callback);
+        }
+
+
     #endregion
 
         public void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess)
@@ -143,13 +204,40 @@ namespace live.videosdk
             _videoSdkDto.SendDTO("INFO", $"LeaveMeeting");
         }
 
+        public void SetVideoEncoderConfig(string videoConfig)
+        {
+            setVideoEncoderConfig(videoConfig);
+            _videoSdkDto.SendDTO("INFO", $"SetVideoEncoderConfig config: {videoConfig}");
+        }
+
+        public void PauseAllStreams(string kind)
+        {
+            pauseAllStreams(kind);
+            _videoSdkDto.SendDTO("INFO", $"PauseAllStreams:- Kind:{kind}");
+        }
+
+        public void ResumeAllStreams(string kind)
+        {
+            resumeAllStreams(kind);
+            _videoSdkDto.SendDTO("INFO", $"ResumeAllStreams:- Kind:{kind}");
+        }
+
+        [DllImport("__Internal")]
+        private static extern void setVideoEncoderConfig(string config);
+
         [DllImport("__Internal")]
         private static extern void leave();
 
         [DllImport("__Internal")]
         private static extern void joinMeeting(string token, string meetingId, string name, bool micEnable, bool camEnable, string participantId, string packageVersion,string platform);
 
-      
+        [DllImport("__Internal")]
+        private static extern void pauseAllStreams(string kind);
+
+        [DllImport("__Internal")]
+        private static extern void resumeAllStreams(string kind);
+
+
     }
 
 #endif
