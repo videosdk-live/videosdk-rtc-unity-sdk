@@ -20,7 +20,7 @@ namespace live.videosdk
         //public event Action<StreamKind> OnStreamPausedCallback;
         //public event Action<StreamKind> OnStreamResumedCallback;
 
-        public string Id
+        public string ParticipantId
         {
             get
             {
@@ -180,10 +180,10 @@ namespace live.videosdk
             {
                 UnRegisterParticipantCallback();
             }
-            _participant = Meeting.GetParticipantById(participantData.ParticipantId);
+            _participant = Meeting.GetParticipantById(participantData.Id);
             if (_participant == null)
             {
-                Debug.LogError($"Invalid Participant Id: {participantData.ParticipantId}. No such participant exist");
+                Debug.LogError($"Invalid Participant Id: {participantData.Id}. No such participant exist");
                 return;
             }
 
@@ -280,7 +280,7 @@ namespace live.videosdk
             if (_participant == null) return;
             if (!IsLocal)
             {
-                Debug.LogError($"{name} participantId {Id} is not your local participant");
+                Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
                 return;
             }
             _participant.ToggleWebCam(status);
@@ -291,7 +291,7 @@ namespace live.videosdk
             if (_participant == null) return;
             if (!IsLocal)
             {
-                Debug.LogError($"{name} participantId {Id} is not your local participant");
+                Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
                 return;
             }
             _participant.ToggleMic(status);
@@ -301,7 +301,7 @@ namespace live.videosdk
             if (_participant == null) return;
             if (!IsLocal)
             {
-                Debug.LogError($"{name} participantId {Id} is not your local participant");
+                Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
                 return;
             }
             _participant.PauseStream(kind);
@@ -311,7 +311,7 @@ namespace live.videosdk
             if (_participant == null) return;
             if (!IsLocal)
             {
-                Debug.LogError($"{name} participantId {Id} is not your local participant");
+                Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
                 return;
             }
             _participant.ResumeStream(kind);
