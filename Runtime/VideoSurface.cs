@@ -299,9 +299,9 @@ namespace live.videosdk
         public void PauseStream(StreamKind kind)
         {
             if (_participant == null) return;
-            if (!IsLocal)
+            if (IsLocal)
             {
-                Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
+                Debug.LogError($"{name} participantId {ParticipantId} is your local participant");
                 return;
             }
             _participant.PauseStream(kind);
@@ -309,9 +309,9 @@ namespace live.videosdk
         public void ResumeStream(StreamKind kind)
         {
             if (_participant == null) return;
-            if (!IsLocal)
+            if (IsLocal)
             {
-                Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
+                Debug.LogError($"{name} participantId {ParticipantId} is your local participant");
                 return;
             }
             _participant.ResumeStream(kind);
