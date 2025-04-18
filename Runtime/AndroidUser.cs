@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace live.videosdk
@@ -20,9 +21,23 @@ namespace live.videosdk
         public event Action OnParticipantLeftCallback;
         public event Action<StreamKind> OnStreamPausedCallaback;
         public event Action<StreamKind> OnStreamResumedCallaback;
+
         private IMeetingControlls _meetControlls;
         private IVideoSDKDTO _videoSdkDto;
-        public AndroidUser(IParticipant participantData, IMeetingControlls meetControlls,IVideoSDKDTO videoSDK)
+
+        private static Dictionary<string, AndroidUser> _instances = new();
+
+
+        // Delegate for the native callback
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void FrameReceivedCallback(
+            [MarshalAs(UnmanagedType.LPStr)] string participantId,
+            IntPtr frameData,
+            int frameDataSize);
+
+        private static FrameReceivedCallback frameCallback;
+
+        public AndroidUser(IParticipant participantData, IMeetingControlls meetControlls, IVideoSDKDTO videoSDK)
         {
             if (participantData != null)
             {
@@ -32,6 +47,8 @@ namespace live.videosdk
                 _meetControlls = meetControlls;
                 _videoSdkDto = videoSDK;
                 RegiesterCallBack();
+                Debug.Log($"Androiduser || {ParticipantId} ");
+                _instances[ParticipantId] = this;
             }
 
         }
@@ -41,6 +58,21 @@ namespace live.videosdk
             using (var pluginClass = new AndroidJavaClass(Meeting.packageName))
             {
                 pluginClass.CallStatic("registerParticipantCallback", ParticipantId, this);
+            }
+            Debug.Log($"RegiesterCallBack {frameCallback == null}");
+            if (frameCallback == null)
+            {
+                // Create the callback delegate
+                frameCallback = new FrameReceivedCallback(OnFrameReceivedNative);
+
+                IntPtr callbackPtr = Marshal.GetFunctionPointerForDelegate(frameCallback);
+                string packageName = "live.videosdk.unity.android.VideoSDKNativePlugin";
+
+                using (var pluginClass = new AndroidJavaClass(packageName))
+                {
+                    pluginClass.CallStatic("setUnityFrameCallback", (long)callbackPtr);
+                    Debug.Log("VideoSDK Native Plugin initialized successfully");
+                }
             }
         }
 
@@ -52,6 +84,7 @@ namespace live.videosdk
 
         public override void OnStreamEnabled(string kind)
         {
+            Debug.Log($"OnStreamEnabled override {kind}");
             _videoSdkDto.SendDTO("INFO", $"StreamEnabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
             if (kind.ToLower().Equals("video"))
             {
@@ -73,6 +106,7 @@ namespace live.videosdk
 
         public override void OnStreamDisabled(string kind)
         {
+            Debug.Log($"OnStreamEnabled disable {kind}");
             _videoSdkDto.SendDTO("INFO", $"StreamDisabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName} ");
             if (kind.ToLower().Equals("video"))
             {
@@ -90,7 +124,7 @@ namespace live.videosdk
                     OnStreamDisabledCallaback?.Invoke(streamKind);
                 }
             });
-            
+
         }
 
         //public override void OnPauseStream(string kind)
@@ -114,7 +148,7 @@ namespace live.videosdk
         //    });
 
         //}
-        
+
         //public override void OnResumeStream(string kind)
         //{
         //    _videoSdkDto.SendDTO("INFO", $"ResumeStream:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName} ");
@@ -135,24 +169,42 @@ namespace live.videosdk
         //    });
 
         //}
-
-        public override void OnVideoFrameReceived(string videoStream)
+       
+        // Native callback method
+        [AOT.MonoPInvokeCallback(typeof(FrameReceivedCallback))]
+        private static void OnFrameReceivedNative(string participantId, IntPtr frameData, int frameDataSize)
         {
             try
             {
-                byte[] byteArr = (Convert.FromBase64String(videoStream));
-                RunOnUnityMainThread(() =>
+
+                if (!_instances.TryGetValue(participantId, out var instance) || instance.OnVideoFrameReceivedCallback == null)
+                    return;
+
+                //Debug.Log($"OnFrameReceivedNative {participantId}");
+                //Debug.Log($"height {height}   width {width}  ");
+
+                // Convert the native pointer to a byte array
+                byte[] managedArray = new byte[frameDataSize];
+                Marshal.Copy(frameData, managedArray, 0, frameDataSize);
+
+                // Invoke the event on the main thread
+                if (instance.OnVideoFrameReceivedCallback != null)
                 {
-                    OnVideoFrameReceivedCallback?.Invoke(byteArr);
-                });
+                    MainThreadDispatcher.Instance.Enqueue(() =>
+                    {
+                        instance.OnVideoFrameReceivedCallback.Invoke(managedArray);
+                    });
+                }
+
 
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Debug.LogError($"Invalid video frame data: {ex.Message}");
+                Debug.LogError($"Error in native callback: {e.Message}");
             }
-           
         }
+
+
 
         #region CallToNative
         public void ToggleWebCam(bool status)
@@ -162,7 +214,7 @@ namespace live.videosdk
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.ToggleWebCam(status,ParticipantId);
+            _meetControlls.ToggleWebCam(status, ParticipantId);
         }
         public void ToggleMic(bool status)
         {
@@ -171,7 +223,7 @@ namespace live.videosdk
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.ToggleMic(status,ParticipantId);
+            _meetControlls.ToggleMic(status, ParticipantId);
         }
 
         public void PauseStream(StreamKind kind)
@@ -215,7 +267,8 @@ namespace live.videosdk
             }
         }
 
-        
+
+
     }
 #endif
 }

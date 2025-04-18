@@ -16,7 +16,7 @@ namespace live.videosdk
 
         //public abstract void OnResumeStream(string kind);
 
-        public abstract void OnVideoFrameReceived(string videoStream);
+       // public abstract void OnVideoFrameReceived(string videoStream);
 
     }
 
