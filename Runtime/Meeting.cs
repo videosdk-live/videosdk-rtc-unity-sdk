@@ -41,6 +41,7 @@ namespace live.videosdk
         private event Action<string, string[]> OnAudioDeviceChangedCallback;
         public event Action<StreamKind> OnPausedAllStreamsCallback;
         public event Action<StreamKind> OnResumedAllStreamsCallback;
+        public event Action<string[]> OnFetchAudioDeviceCallback;
 
         #endregion
 
@@ -258,6 +259,11 @@ namespace live.videosdk
             _meetingActivity?.LeaveMeeting();
         }
 
+        public void GetAudioDevices()
+        {
+            _meetingActivity?.GetAudioDevices();
+        }
+
         public void PauseAllStreams(StreamKind kind)
         {
             _meetingActivity.PauseAllStreams(kind.ToString().ToLower());
@@ -272,10 +278,10 @@ namespace live.videosdk
             _meetingActivity?.SetVideoEncoderConfig(config.ToString());
         }
 
-        private IEnumerable<string>GetAudioDevices()
-        {
-            return _avaliableAudioDevicesArray;
-        }
+        //private IEnumerable<string>GetAudioDevices()
+        //{
+        //    return _avaliableAudioDevicesArray;
+        //}
 
         private void OnMeetingJoinFailed(string errorMessage)
         {
@@ -394,6 +400,18 @@ namespace live.videosdk
         private void OnFetchAudioDevice(string[] obj)
         {
             _avaliableAudioDevicesArray = obj;
+            Debug.Log($"OnFetchAudioDevice {obj.Length}");
+
+            foreach (var item in obj)
+            {
+                Debug.Log($"device {item}");
+            }
+
+            RunOnUnityMainThread(() =>
+            {
+                OnFetchAudioDeviceCallback?.Invoke(obj);
+            });
+
         }
 
 

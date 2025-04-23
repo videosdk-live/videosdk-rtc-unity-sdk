@@ -211,6 +211,12 @@ namespace live.videosdk
             _videoSdkDto.SendDTO("INFO", $"LeaveMeeting");
         }
 
+        public void GetAudioDevices()
+        {
+            _pluginClass.CallStatic("getAudioDevices");
+            _videoSdkDto.SendDTO("INFO", $"GetAudioDevices");
+        }
+
 
         public void SetVideoEncoderConfig(string videoConfig)
         {
