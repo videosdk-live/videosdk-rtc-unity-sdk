@@ -8,10 +8,10 @@ namespace live.videosdk
         void SubscribeToResumedAllStreams(Action<string> callback);
 
 
-        void SubscribeToAvailableAudioDevices(Action<string, string> callback);
+        //void SubscribeToAvailableAudioDevices(Action<string, string> callback);
         void SubscribeToAudioDeviceChanged(Action<string, string> callback);
 
-        void SubscribeToAvailableVideoDevices(Action<string, string> callback);
+        //void SubscribeToAvailableVideoDevices(Action<string, string> callback);
         void SubscribeToVideoDeviceChanged(Action<string, string> callback);
 
 

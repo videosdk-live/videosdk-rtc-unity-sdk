@@ -55,14 +55,14 @@ namespace live.videosdk
         public void SubscribeToError(Action<string> callback) => _meetCallback.SubscribeToError(callback);
         public void UnsubscribeFromError(Action<string> callback) => _meetCallback.UnsubscribeFromError(callback);
 
-        public void SubscribeToAvailableAudioDevices(Action<string, string> callback) => _meetCallback.SubscribeToAvailableAudioDevices(callback);
-        public void UnsubscribeFromAvailableAudioDevices(Action<string, string> callback) => _meetCallback.UnsubscribeFromAvailableAudioDevices(callback);
+        //public void SubscribeToAvailableAudioDevices(Action<string, string> callback) => _meetCallback.SubscribeToAvailableAudioDevices(callback);
+        //public void UnsubscribeFromAvailableAudioDevices(Action<string, string> callback) => _meetCallback.UnsubscribeFromAvailableAudioDevices(callback);
 
         public void SubscribeToAudioDeviceChanged(Action<string, string> callback) => _meetCallback.SubscribeToAudioDeviceChanged(callback);
         public void UnsubscribeFromAudioDeviceChanged(Action<string, string> callback) => _meetCallback.UnsubscribeFromAudioDeviceChanged(callback);
 
-        public void SubscribeToAvailableVideoDevices(Action<string, string> callback) => _meetCallback.SubscribeToAvailableVideoDevices(callback);
-        public void UnsubscribeFromAvailableVideoDevices(Action<string, string> callback) => _meetCallback.UnsubscribeFromAvailableVideoDevices(callback);
+        //public void SubscribeToAvailableVideoDevices(Action<string, string> callback) => _meetCallback.SubscribeToAvailableVideoDevices(callback);
+        //public void UnsubscribeFromAvailableVideoDevices(Action<string, string> callback) => _meetCallback.UnsubscribeFromAvailableVideoDevices(callback);
 
         public void SubscribeToVideoDeviceChanged(Action<string, string> callback) => _meetCallback.SubscribeToVideoDeviceChanged(callback);
         public void UnsubscribeFromVideoDeviceChanged(Action<string, string> callback) => _meetCallback.UnsubscribeFromVideoDeviceChanged(callback);
@@ -127,21 +127,26 @@ namespace live.videosdk
             _videoSdkDto.SendDTO("INFO", $"LeaveMeeting");
         }
 
-        public void GetAudioDevices()
+        public string GetAudioDevices()
         {
-            _pluginClass.CallStatic("getAudioDevices");
-            _videoSdkDto.SendDTO("INFO", $"GetAudioDevices");
+            //_videoSdkDto.SendDTO("INFO", $"GetAudioDevices");
+            return _pluginClass.CallStatic<string>("getAudioDevices");
         }
 
-        public void GetVideoDevices()
+        public string GetVideoDevices()
         {
-            _pluginClass.CallStatic("getVideoDevices");
-            _videoSdkDto.SendDTO("INFO", $"GetVideoDevices");
+            return _pluginClass.CallStatic<string>("getVideoDevices");
+            //_videoSdkDto.SendDTO("INFO", $"GetVideoDevices");
         }
-
+            
         public string GetSelectedAudioDevice()
         {
             return _pluginClass.CallStatic<string>("getSelectedAudioDevice");
+        }
+
+        public string GetSelectedVideoDevice()
+        {
+            return _pluginClass.CallStatic<string>("getSelectedVideoDevice");
         }
 
         public void ChangeAudioDevice(string deviceLabel)
@@ -153,7 +158,7 @@ namespace live.videosdk
 
         public void ChangeVideoDevice(string deviceLabel)
         {
-            Debug.Log($"ChangeVideoDevice SendDTO");
+            Debug.Log($"ChangeVideoDevice SendDTO {deviceLabel}");
             _pluginClass.CallStatic("changeVideoDevice", deviceLabel);
             _videoSdkDto.SendDTO("INFO", $"ChangeVideoDevice");
         }
@@ -163,7 +168,7 @@ namespace live.videosdk
             _pluginClass.CallStatic("setVideoEncoderConfig", videoConfig, _applicationContext);
             _videoSdkDto.SendDTO("INFO", $"SetVideoEncoderConfig config: {videoConfig}");
         }
-
+            
         public void PauseAllStreams(string kind)
         {
             _pluginClass.CallStatic("pauseAllStreams", kind);

@@ -8,10 +8,12 @@ namespace live.videosdk
         void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess);
         void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId, string packageVersion);
         void LeaveMeeting();
-        void GetAudioDevices();
-        void GetVideoDevices();
+        string GetAudioDevices();
+        string GetVideoDevices();
 
         string GetSelectedAudioDevice();
+        string GetSelectedVideoDevice();
+
         void ChangeAudioDevice(string deviceLabel);
         void ChangeVideoDevice(string deviceLabel);
         void SetVideoEncoderConfig(string videoConfig);
@@ -21,10 +23,10 @@ namespace live.videosdk
         void SubscribeToExternalCallStarted(Action callback);
 
 
-        void SubscribeToAvailableAudioDevices(Action<string, string> callback);
+        //void SubscribeToAvailableAudioDevices(Action<string, string> callback);
         void SubscribeToAudioDeviceChanged(Action<string, string> callback);
 
-        void SubscribeToAvailableVideoDevices(Action<string, string> callback);
+        //void SubscribeToAvailableVideoDevices(Action<string, string> callback);
         void SubscribeToVideoDeviceChanged(Action<string, string> callback);
 
 
@@ -37,10 +39,10 @@ namespace live.videosdk
         void SubscribeToResumedAllStreams(Action<string> callback);
         void SubscribeToPausedAllStreams(Action<string> callback);
 
-        void UnsubscribeFromAvailableAudioDevices(Action<string, string> callback);
+        //void UnsubscribeFromAvailableAudioDevices(Action<string, string> callback);
         void UnsubscribeFromAudioDeviceChanged(Action<string, string> callback);
 
-        void UnsubscribeFromAvailableVideoDevices(Action<string, string> callback);
+        //void UnsubscribeFromAvailableVideoDevices(Action<string, string> callback);
         void UnsubscribeFromVideoDeviceChanged(Action<string, string> callback);
 
         void UnsubscribeFromError(Action<string> callback);

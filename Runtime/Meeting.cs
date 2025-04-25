@@ -146,10 +146,10 @@ namespace live.videosdk
             _meetingActivity.SubscribeToMeetingStateChanged(OnMeetingStateChanged);
             _meetingActivity.SubscribeToError(OnError);
 
-            _meetingActivity.SubscribeToAvailableAudioDevices(OnAvailableAudioDevices);
+            //_meetingActivity.SubscribeToAvailableAudioDevices(OnAvailableAudioDevices);
             _meetingActivity.SubscribeToAudioDeviceChanged(OnAudioDeviceChanged);
 
-            _meetingActivity.SubscribeToAvailableVideoDevices(OnAvailableVideoDevices);
+            //_meetingActivity.SubscribeToAvailableVideoDevices(OnAvailableVideoDevices);
             _meetingActivity.SubscribeToVideoDeviceChanged(OnVideoDeviceChanged);
 
             _meetingActivity.SubscribeToSpeakerChanged(OnSpeakerChanged);
@@ -169,10 +169,10 @@ namespace live.videosdk
             _meetingActivity.UnsubscribeFromMeetingStateChanged(OnMeetingStateChanged);
             _meetingActivity.UnsubscribeFromError(OnError);
 
-            _meetingActivity.UnsubscribeFromAvailableAudioDevices(OnAvailableAudioDevices);
+            //_meetingActivity.UnsubscribeFromAvailableAudioDevices(OnAvailableAudioDevices);
             _meetingActivity.UnsubscribeFromAudioDeviceChanged(OnAudioDeviceChanged);
 
-            _meetingActivity.UnsubscribeFromAvailableVideoDevices(OnAvailableVideoDevices);
+            //_meetingActivity.UnsubscribeFromAvailableVideoDevices(OnAvailableVideoDevices);
             _meetingActivity.UnsubscribeFromVideoDeviceChanged(OnVideoDeviceChanged);
 
 
@@ -275,19 +275,24 @@ namespace live.videosdk
             _meetingActivity?.LeaveMeeting();
         }
 
-        public void GetAudioDevices()
+        public string GetAudioDevices()
         {
-            _meetingActivity?.GetAudioDevices();
+           return _meetingActivity?.GetAudioDevices();
         }
 
-        public void GetVideoDevices()
+        public string GetVideoDevices()
         {
-            _meetingActivity?.GetVideoDevices();
+            return _meetingActivity?.GetVideoDevices();
         }
 
         public string GetSelectedAudioDevice()
         {
            return _meetingActivity?.GetSelectedAudioDevice();
+        }
+
+        public string GetSelectedVideoDevice()
+        {
+            return _meetingActivity?.GetSelectedVideoDevice();
         }
 
         public void ChangeAudioDevice(string deviceLabel)
