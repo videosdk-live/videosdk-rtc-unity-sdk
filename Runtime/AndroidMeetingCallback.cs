@@ -17,7 +17,8 @@ namespace live.videosdk
                 return _instance;
             }
         }
-        private AndroidMeetingCallback() : base("live.videosdk.unity.android.callbacks.MeetingCallback") {
+        private AndroidMeetingCallback() : base("live.videosdk.unity.android.callbacks.MeetingCallback")
+        {
             RegisterNativeMettingCallBack();
         }
 
@@ -27,7 +28,7 @@ namespace live.videosdk
             {
                 pluginClass.CallStatic("registerMeetingCallback", this);
             }
-            
+
         }
 
         // Public methods to subscribe and unsubscribe to events
@@ -91,45 +92,24 @@ namespace live.videosdk
             OnErrorCallback -= callback;
         }
 
-        public void SubscribeToAudioDeviceChanged(Action<string, string[]> callback)
-        {
-            OnAudioDeviceChangedCallback += callback;
-        }
+        public void SubscribeToAvailableAudioDevices(Action<string, string> callback) => OnAvailableAudioDevicesCallback += callback;
+        public void UnsubscribeFromAvailableAudioDevices(Action<string, string> callback) => OnAvailableAudioDevicesCallback -= callback;
+        
+        public void SubscribeToAudioDeviceChanged(Action<string, string> callback) => OnAudioDeviceChangedCallback += callback;
+        public void UnsubscribeFromAudioDeviceChanged(Action<string, string> callback) => OnAudioDeviceChangedCallback -= callback;
 
-        public void UnsubscribeFromAudioDeviceChanged(Action<string, string[]> callback)
-        {
-            OnAudioDeviceChangedCallback -= callback;
-        }
+        public void SubscribeToAvailableVideoDevices(Action<string, string> callback) => OnAvailableVideoDevicesCallback += callback;
+        public void UnsubscribeFromAvailableVideoDevices(Action<string, string> callback) => OnAvailableVideoDevicesCallback -= callback;
 
-        public void SubscribeToFetchAudioDevice(Action<string[]> callback)
-        {
-            OnFetchAudioDeviceCallback += callback;
-        }
+        public void SubscribeToVideoDeviceChanged(Action<string, string> callback) => OnVideoDeviceChangedCallback += callback;
+        public void UnsubscribeFromVideoDeviceChanged(Action<string, string> callback) => OnVideoDeviceChangedCallback -= callback;
 
-        public void UnsubscribeFromFetchAudioDevice(Action<string[]> callback)
-        {
-            OnFetchAudioDeviceCallback -= callback;
-        }
 
-        public void SubscribeToSpeakerChanged(Action<string> callback)
-        {
-            OnSpeakerChangedCallback += callback;
-        }
+        public void SubscribeToSpeakerChanged(Action<string> callback) => OnSpeakerChangedCallback += callback;
+        public void UnsubscribeFromSpeakerChanged(Action<string> callback) => OnSpeakerChangedCallback -= callback;
 
-        public void UnsubscribeFromSpeakerChanged(Action<string> callback)
-        {
-            OnSpeakerChangedCallback -= callback;
-        }
-
-        public void SubscribeToExternalCallHangup(Action callback)
-        {
-            OnExternalCallHangupCallback += callback;
-        }
-
-        public void UnsubscribeFromExternalCallHangup(Action callback)
-        {
-            OnExternalCallHangupCallback -= callback;
-        }
+        public void SubscribeToExternalCallHangup(Action callback) => OnExternalCallHangupCallback += callback;
+        public void UnsubscribeFromExternalCallHangup(Action callback) => OnExternalCallHangupCallback -= callback;
 
         public void SubscribeToExternalCallStarted(Action callback)
         {
@@ -169,24 +149,33 @@ namespace live.videosdk
             OnResumedAllStreamsCallback -= callback;
         }
 
-        private event Action<string, string, string, bool, bool , string , string , string , string > OnMeetingJoinedCallback;
+        private event Action<string, string, string, bool, bool, string, string, string, string> OnMeetingJoinedCallback;
         private event Action<string, string, bool> OnMeetingLeftCallback;
         private event Action<string, string, bool> OnParticipantJoinedCallback;
         private event Action<string, string, bool> OnParticipantLeftCallback;
         private event Action<string> OnErrorCallback;
         private event Action<string> OnMeetingStateChangedCallback;
-        private event Action<string, string[]> OnAudioDeviceChangedCallback;
-        private event Action<string[]> OnFetchAudioDeviceCallback;
-        private event Action<string>OnSpeakerChangedCallback;
+
+        private event Action<string, string> OnAudioDeviceChangedCallback;
+        private event Action<string, string> OnAvailableAudioDevicesCallback;
+
+
+        private event Action<string, string> OnVideoDeviceChangedCallback;
+        private event Action<string, string> OnAvailableVideoDevicesCallback;
+
+
+
+
+        private event Action<string> OnSpeakerChangedCallback;
         private event Action OnExternalCallHangupCallback;
         private event Action OnExternalCallStartedCallback;
         private event Action OnExternalCallRingingCallback;
         private event Action<string> OnPausedAllStreamsCallback;
         private event Action<string> OnResumedAllStreamsCallback;
 
-        private void OnMeetingJoined(string meetingId, string Id, string name, bool enabledLogs,string logEndPoint, string jwtKey, string peerId, string sessionId)
+        private void OnMeetingJoined(string meetingId, string Id, string name, bool enabledLogs, string logEndPoint, string jwtKey, string peerId, string sessionId)
         {
-            OnMeetingJoinedCallback?.Invoke(meetingId, Id, name, true,enabledLogs,logEndPoint,jwtKey,peerId,sessionId);
+            OnMeetingJoinedCallback?.Invoke(meetingId, Id, name, true, enabledLogs, logEndPoint, jwtKey, peerId, sessionId);
         }
         private void OnMeetingLeft(string Id, string name)
         {
@@ -213,14 +202,33 @@ namespace live.videosdk
             OnErrorCallback?.Invoke(jsonString);
         }
 
-        private void OnAudioDeviceChanged(String selectedDevice, string[] availableDevices)
+        private void OnAudioDeviceChanged(string availableDevice, string selectedDevice)
         {
-            OnAudioDeviceChangedCallback?.Invoke(selectedDevice, availableDevices);
+            Debug.Log($"OnAudioDeviceChanged callback");
+            OnAudioDeviceChangedCallback?.Invoke(availableDevice, selectedDevice);
         }
 
-        private void OnFetchAudioDevice(string[] availableDevices)
+        private void OnAvailableAudioDevices(string availableDevices, string selectedDeviceJson)
         {
-            OnFetchAudioDeviceCallback?.Invoke(availableDevices);
+            Debug.Log($"OnAvailableAudioDevices callback");
+            OnAvailableAudioDevicesCallback?.Invoke(availableDevices, selectedDeviceJson);
+        }
+
+        private void OnVideoDeviceChanged(string availableDevice, string selectedDevice)
+        {
+            Debug.Log($"OnAudioDeviceChanged callback");
+            OnVideoDeviceChangedCallback?.Invoke(availableDevice, selectedDevice);
+        }
+
+        private void OnAvailableVideoDevices(string availableDevices, string selectedDeviceJson)
+        {
+            Debug.Log($"OnAvailableVideoDevices callback");
+            OnAvailableVideoDevicesCallback?.Invoke(availableDevices, selectedDeviceJson);
+        }
+
+        private void OnSelectedAudioDevice(string s)
+        {
+            Debug.Log($"OnSelectedAudioDevice {s}");
         }
 
         private void OnSpeakerChanged(string participantId)
@@ -250,6 +258,7 @@ namespace live.videosdk
         {
             OnResumedAllStreamsCallback?.Invoke(kind);
         }
+
 
     }
 #endif

@@ -28,7 +28,7 @@ namespace live.videosdk
 
         }
 
-    #region meet-events
+        #region meet-events
         // Public methods to subscribe and unsubscribe to events
         public void SubscribeToMeetingJoined(Action<string, string, string, bool, bool, string, string, string, string> callback)
         {
@@ -40,134 +40,50 @@ namespace live.videosdk
             _meetCallback.UnsubscribeFromMeetingJoined(callback);
         }
 
-        public void SubscribeToMeetingLeft(Action<string, string, bool> callback)
-        {
-            _meetCallback.SubscribeToMeetingLeft(callback);
-        }
+        public void SubscribeToMeetingLeft(Action<string, string, bool> callback) => _meetCallback.SubscribeToMeetingLeft(callback);
+        public void UnsubscribeFromMeetingLeft(Action<string, string, bool> callback) => _meetCallback.UnsubscribeFromMeetingLeft(callback);
 
-        public void UnsubscribeFromMeetingLeft(Action<string, string, bool> callback)
-        {
-            _meetCallback.UnsubscribeFromMeetingLeft(callback);
-        }
+        public void SubscribeToParticipantJoined(Action<string, string, bool> callback) => _meetCallback.SubscribeToParticipantJoined(callback);
+        public void UnsubscribeFromParticipantJoined(Action<string, string, bool> callback) => _meetCallback.UnsubscribeFromParticipantJoined(callback);
 
-        public void SubscribeToParticipantJoined(Action<string, string, bool> callback)
-        {
-            _meetCallback.SubscribeToParticipantJoined(callback);
-        }
+        public void SubscribeToParticipantLeft(Action<string, string, bool> callback) => _meetCallback.SubscribeToParticipantLeft(callback);
+        public void UnsubscribeFromParticipantLeft(Action<string, string, bool> callback) => _meetCallback.UnsubscribeFromParticipantLeft(callback);
 
-        public void UnsubscribeFromParticipantJoined(Action<string, string, bool> callback)
-        {
-            _meetCallback.UnsubscribeFromParticipantJoined(callback);
-        }
+        public void SubscribeToMeetingStateChanged(Action<string> callback) => _meetCallback.SubscribeToMeetingStateChanged(callback);
+        public void UnsubscribeFromMeetingStateChanged(Action<string> callback) => _meetCallback.UnsubscribeFromMeetingStateChanged(callback);
 
-        public void SubscribeToParticipantLeft(Action<string, string, bool> callback)
-        {
-            _meetCallback.SubscribeToParticipantLeft(callback);
-        }
+        public void SubscribeToError(Action<string> callback) => _meetCallback.SubscribeToError(callback);
+        public void UnsubscribeFromError(Action<string> callback) => _meetCallback.UnsubscribeFromError(callback);
 
-        public void UnsubscribeFromParticipantLeft(Action<string, string, bool> callback)
-        {
-            _meetCallback.UnsubscribeFromParticipantLeft(callback);
-        }
+        public void SubscribeToAvailableAudioDevices(Action<string, string> callback) => _meetCallback.SubscribeToAvailableAudioDevices(callback);
+        public void UnsubscribeFromAvailableAudioDevices(Action<string, string> callback) => _meetCallback.UnsubscribeFromAvailableAudioDevices(callback);
 
-        public void SubscribeToMeetingStateChanged(Action<string> callback)
-        {
-            _meetCallback.SubscribeToMeetingStateChanged(callback);
-        }
+        public void SubscribeToAudioDeviceChanged(Action<string, string> callback) => _meetCallback.SubscribeToAudioDeviceChanged(callback);
+        public void UnsubscribeFromAudioDeviceChanged(Action<string, string> callback) => _meetCallback.UnsubscribeFromAudioDeviceChanged(callback);
 
-        public void UnsubscribeFromMeetingStateChanged(Action<string> callback)
-        {
-            _meetCallback.UnsubscribeFromMeetingStateChanged(callback);
-        }
+        public void SubscribeToAvailableVideoDevices(Action<string, string> callback) => _meetCallback.SubscribeToAvailableVideoDevices(callback);
+        public void UnsubscribeFromAvailableVideoDevices(Action<string, string> callback) => _meetCallback.UnsubscribeFromAvailableVideoDevices(callback);
 
-        public void SubscribeToError(Action<string> callback)
-        {
-            _meetCallback.SubscribeToError(callback);
-        }
+        public void SubscribeToVideoDeviceChanged(Action<string, string> callback) => _meetCallback.SubscribeToVideoDeviceChanged(callback);
+        public void UnsubscribeFromVideoDeviceChanged(Action<string, string> callback) => _meetCallback.UnsubscribeFromVideoDeviceChanged(callback);
 
-        public void UnsubscribeFromError(Action<string> callback)
-        {
-            _meetCallback.UnsubscribeFromError(callback);
-        }
+        public void SubscribeToSpeakerChanged(Action<string> callback) => _meetCallback.SubscribeToSpeakerChanged(callback);
+        public void UnsubscribeFromSpeakerChanged(Action<string> callback) => _meetCallback.UnsubscribeFromSpeakerChanged(callback);
 
-        public void SubscribeToAudioDeviceChanged(Action<string,string[]> callback)
-        {
-            _meetCallback.SubscribeToAudioDeviceChanged(callback);
-        }
+        public void SubscribeToExternalCallRinging(Action callback) => _meetCallback.SubscribeToExternalCallRinging(callback);
+        public void UnsubscribeFromExternalCallRinging(Action callback) => _meetCallback.UnsubscribeFromExternalCallRinging(callback);
 
-        public void UnsubscribeFromAudioDeviceChanged(Action<string,string[]> callback)
-        {
-            _meetCallback.UnsubscribeFromAudioDeviceChanged(callback);
-        }
+        public void SubscribeToExternalCallStarted(Action callback) => _meetCallback.SubscribeToExternalCallStarted(callback);
+        public void UnsubscribeFromExternalCallStarted(Action callback) => _meetCallback.UnsubscribeFromExternalCallStarted(callback);
 
-        public void SubscribeToFetchAudioDevice(Action<string[]> callback)
-        {
-            _meetCallback.SubscribeToFetchAudioDevice(callback);
-        }
+        public void SubscribeToExternalCallHangup(Action callback) => _meetCallback.SubscribeToExternalCallHangup(callback);
+        public void UnsubscribeFromExternalCallHangup(Action callback) => _meetCallback.UnsubscribeFromExternalCallHangup(callback);
 
-        public void UnsubscribeFromFetchAudioDevice(Action<string[]> callback)
-        {
-            _meetCallback.UnsubscribeFromFetchAudioDevice(callback);
-        }
+        public void SubscribeToResumedAllStreams(Action<string> callback) => _meetCallback.SubscribeToResumedAllStreams(callback);
+        public void UnsubscribeFromResumedAllStreams(Action<string> callback) => _meetCallback.UnsubscribeFromResumedAllStreams(callback);
 
-        public void SubscribeToSpeakerChanged(Action<string> callback)
-        {
-            _meetCallback.SubscribeToSpeakerChanged(callback);
-        }
-
-        public void UnsubscribeFromSpeakerChanged(Action<string> callback)
-        {
-            _meetCallback.UnsubscribeFromSpeakerChanged(callback);
-        }
-
-        public void SubscribeToExternalCallRinging(Action callback)
-        {
-            _meetCallback.SubscribeToExternalCallRinging(callback);
-        }
-
-        public void UnsubscribeFromExternalCallRinging(Action callback)
-        {
-            _meetCallback.UnsubscribeFromExternalCallRinging(callback);
-        }
-
-        public void SubscribeToExternalCallStarted(Action callback)
-        {
-            _meetCallback.SubscribeToExternalCallStarted(callback);
-        }
-
-        public void UnsubscribeFromExternalCallStarted(Action callback)
-        {
-            _meetCallback.UnsubscribeFromExternalCallStarted(callback);
-        }
-
-        public void SubscribeToExternalCallHangup(Action callback)
-        {
-            _meetCallback.SubscribeToExternalCallHangup(callback);
-        }
-
-        public void UnsubscribeFromExternalCallHangup(Action callback)
-        {
-            _meetCallback.UnsubscribeFromExternalCallHangup(callback);
-        }
-        public void SubscribeToResumedAllStreams(Action<string> callback)
-        {
-            _meetCallback.SubscribeToResumedAllStreams(callback);
-        }
-
-        public void SubscribeToPausedAllStreams(Action<string> callback)
-        {
-            _meetCallback.SubscribeToPausedAllStreams(callback);
-        }
-
-        public void UnsubscribeFromPausedAllStreams(Action<string> callback)
-        {
-            _meetCallback.UnsubscribeFromPausedAllStreams(callback);
-        }
-
-        public void UnsubscribeFromResumedAllStreams(Action<string> callback)
-        {
-            _meetCallback.UnsubscribeFromResumedAllStreams(callback);
-        }
+        public void SubscribeToPausedAllStreams(Action<string> callback) => _meetCallback.SubscribeToPausedAllStreams(callback);
+        public void UnsubscribeFromPausedAllStreams(Action<string> callback) => _meetCallback.UnsubscribeFromPausedAllStreams(callback);
 
         #endregion
 
@@ -178,7 +94,7 @@ namespace live.videosdk
                 //Debug.LogError("Meet Response : " + jsonResponse);
                 JObject result = JObject.Parse(jsonResponse);
 
-                var meetingId= result["roomId"].ToString();
+                var meetingId = result["roomId"].ToString();
                 onSuccess?.Invoke(meetingId);
             }
             catch (JsonReaderException ex)
@@ -187,22 +103,22 @@ namespace live.videosdk
             }
 
         }
-       
-        public void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId,string packageVersion)
+
+        public void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId, string packageVersion)
         {
             try
             {
                 JObject result = JObject.Parse(jsonResponse);
                 var meetingId = result["meetingId"].ToString();
-                string platform ="Unity-"+Application.platform.ToString();
-                _pluginClass.CallStatic("joinMeeting", _currentActivity, token, meetingId, name, micEnable, camEnable, participantId,packageVersion, platform);
+                string platform = "Unity-" + Application.platform.ToString();
+                _pluginClass.CallStatic("joinMeeting", _currentActivity, token, meetingId, name, micEnable, camEnable, participantId, packageVersion, platform);
                 _videoSdkDto.SendDTO("INFO", $"JoinMeeting:- MeetingId:{meetingId}");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Debug.LogError(ex.StackTrace);
             }
-            
+
         }
 
         public void LeaveMeeting()
@@ -217,16 +133,40 @@ namespace live.videosdk
             _videoSdkDto.SendDTO("INFO", $"GetAudioDevices");
         }
 
+        public void GetVideoDevices()
+        {
+            _pluginClass.CallStatic("getVideoDevices");
+            _videoSdkDto.SendDTO("INFO", $"GetVideoDevices");
+        }
+
+        public string GetSelectedAudioDevice()
+        {
+            return _pluginClass.CallStatic<string>("getSelectedAudioDevice");
+        }
+
+        public void ChangeAudioDevice(string deviceLabel)
+        {
+            Debug.Log($"ChangeAudioDevice SendDTO {deviceLabel}");
+            _pluginClass.CallStatic("changeAudioDevice", deviceLabel);
+            _videoSdkDto.SendDTO("INFO", $"ChangeAudioDevice");
+        }
+
+        public void ChangeVideoDevice(string deviceLabel)
+        {
+            Debug.Log($"ChangeVideoDevice SendDTO");
+            _pluginClass.CallStatic("changeVideoDevice", deviceLabel);
+            _videoSdkDto.SendDTO("INFO", $"ChangeVideoDevice");
+        }
 
         public void SetVideoEncoderConfig(string videoConfig)
         {
-            _pluginClass.CallStatic("setVideoEncoderConfig",videoConfig, _applicationContext);
+            _pluginClass.CallStatic("setVideoEncoderConfig", videoConfig, _applicationContext);
             _videoSdkDto.SendDTO("INFO", $"SetVideoEncoderConfig config: {videoConfig}");
         }
 
         public void PauseAllStreams(string kind)
         {
-            _pluginClass.CallStatic("pauseAllStreams",kind);
+            _pluginClass.CallStatic("pauseAllStreams", kind);
             _videoSdkDto.SendDTO("INFO", $"PauseAllStreams:- Kind:{kind}");
         }
 
