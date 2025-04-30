@@ -29,13 +29,13 @@ namespace live.videosdk
 
 
         // Delegate for the native callback
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void FrameReceivedCallback(
-            [MarshalAs(UnmanagedType.LPStr)] string participantId,
-            IntPtr frameData,
-            int frameDataSize);
+        //[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        //public delegate void FrameReceivedCallback(
+        //    [MarshalAs(UnmanagedType.LPStr)] string participantId,
+        //    IntPtr frameData,
+        //    int frameDataSize);
 
-        private static FrameReceivedCallback frameCallback;
+        //private static FrameReceivedCallback frameCallback;
 
         public AndroidUser(IParticipant participantData, IMeetingControlls meetControlls, IVideoSDKDTO videoSDK)
         {
@@ -59,21 +59,21 @@ namespace live.videosdk
             {
                 pluginClass.CallStatic("registerParticipantCallback", ParticipantId, this);
             }
-            Debug.Log($"RegiesterCallBack {frameCallback == null}");
-            if (frameCallback == null)
-            {
-                // Create the callback delegate
-                frameCallback = new FrameReceivedCallback(OnFrameReceivedNative);
+            //Debug.Log($"RegiesterCallBack {frameCallback == null}");
+            //if (frameCallback == null)
+            //{
+            //    // Create the callback delegate
+            //    frameCallback = new FrameReceivedCallback(OnFrameReceivedNative);
 
-                IntPtr callbackPtr = Marshal.GetFunctionPointerForDelegate(frameCallback);
-                string packageName = "live.videosdk.unity.android.VideoSDKNativePlugin";
+            //    IntPtr callbackPtr = Marshal.GetFunctionPointerForDelegate(frameCallback);
+            //    string packageName = "live.videosdk.unity.android.VideoSDKNativePlugin";
 
-                using (var pluginClass = new AndroidJavaClass(packageName))
-                {
-                    pluginClass.CallStatic("setUnityFrameCallback", (long)callbackPtr);
-                    Debug.Log("VideoSDK Native Plugin initialized successfully");
-                }
-            }
+            //    using (var pluginClass = new AndroidJavaClass(packageName))
+            //    {
+            //        pluginClass.CallStatic("setUnityFrameCallback", (long)callbackPtr);
+            //        Debug.Log("VideoSDK Native Plugin initialized successfully");
+            //    }
+            //}
         }
 
         public void OnParticipantLeft()
@@ -169,39 +169,58 @@ namespace live.videosdk
         //    });
 
         //}
-       
+
         // Native callback method
-        [AOT.MonoPInvokeCallback(typeof(FrameReceivedCallback))]
-        private static void OnFrameReceivedNative(string participantId, IntPtr frameData, int frameDataSize)
+        //[AOT.MonoPInvokeCallback(typeof(FrameReceivedCallback))]
+        //private static void OnFrameReceivedNative(string participantId, IntPtr frameData, int frameDataSize)
+        //{
+        //    try
+        //    {
+
+        //        if (!_instances.TryGetValue(participantId, out var instance) || instance.OnVideoFrameReceivedCallback == null)
+        //            return;
+
+        //        //Debug.Log($"OnFrameReceivedNative {participantId}");
+        //        //Debug.Log($"height {height}   width {width}  ");
+
+        //        // Convert the native pointer to a byte array
+        //        byte[] managedArray = new byte[frameDataSize];
+        //        Marshal.Copy(frameData, managedArray, 0, frameDataSize);
+
+        //        // Invoke the event on the main thread
+        //        if (instance.OnVideoFrameReceivedCallback != null)
+        //        {
+        //            MainThreadDispatcher.Instance.Enqueue(() =>
+        //            {
+        //                instance.OnVideoFrameReceivedCallback.Invoke(managedArray);
+        //            });
+        //        }
+
+
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Debug.LogError($"Error in native callback: {e.Message}");
+        //    }
+        //}
+
+
+        public override void OnVideoFrameReceived(string videoStream)
         {
             try
             {
-
-                if (!_instances.TryGetValue(participantId, out var instance) || instance.OnVideoFrameReceivedCallback == null)
-                    return;
-
-                //Debug.Log($"OnFrameReceivedNative {participantId}");
-                //Debug.Log($"height {height}   width {width}  ");
-
-                // Convert the native pointer to a byte array
-                byte[] managedArray = new byte[frameDataSize];
-                Marshal.Copy(frameData, managedArray, 0, frameDataSize);
-
-                // Invoke the event on the main thread
-                if (instance.OnVideoFrameReceivedCallback != null)
+                byte[] byteArr = (Convert.FromBase64String(videoStream));
+                RunOnUnityMainThread(() =>
                 {
-                    MainThreadDispatcher.Instance.Enqueue(() =>
-                    {
-                        instance.OnVideoFrameReceivedCallback.Invoke(managedArray);
-                    });
-                }
-
+                    OnVideoFrameReceivedCallback?.Invoke(byteArr);
+                });
 
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Debug.LogError($"Error in native callback: {e.Message}");
+                Debug.LogError($"Invalid video frame data: {ex.Message}");
             }
+
         }
 
 

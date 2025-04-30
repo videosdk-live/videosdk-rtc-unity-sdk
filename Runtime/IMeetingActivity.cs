@@ -6,7 +6,7 @@ namespace live.videosdk
     internal interface IMeetingActivity
     {
         void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess);
-        void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId, string packageVersion);
+        void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId, string packageVersion, CustomStreamData encorderConfig);
         void LeaveMeeting();
         string GetAudioDevices();
         string GetVideoDevices();

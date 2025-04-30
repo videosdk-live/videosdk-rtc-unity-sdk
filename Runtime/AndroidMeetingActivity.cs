@@ -104,14 +104,29 @@ namespace live.videosdk
 
         }
 
-        public void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId, string packageVersion)
+        public void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId, string packageVersion, CustomStreamData encorderConfig)
         {
             try
             {
                 JObject result = JObject.Parse(jsonResponse);
                 var meetingId = result["meetingId"].ToString();
                 string platform = "Unity-" + Application.platform.ToString();
-                _pluginClass.CallStatic("joinMeeting", _currentActivity, token, meetingId, name, micEnable, camEnable, participantId, packageVersion, platform);
+
+
+                JoinMeetingConfig joinMeetingConfig = new JoinMeetingConfig(token,
+                                                                            meetingId,
+                                                                            name,
+                                                                            micEnable,
+                                                                            camEnable,
+                                                                            participantId,
+                                                                            packageVersion,
+                                                                            platform,
+                                                                            encorderConfig);
+
+
+                Debug.Log($"join config {JsonConvert.SerializeObject(joinMeetingConfig)}");
+                //_pluginClass.CallStatic("joinMeeting", _currentActivity, token, meetingId, name, micEnable, camEnable, participantId, packageVersion, platform);
+                _pluginClass.CallStatic("joinMeeting", _currentActivity, JsonConvert.SerializeObject(joinMeetingConfig));
                 _videoSdkDto.SendDTO("INFO", $"JoinMeeting:- MeetingId:{meetingId}");
             }
             catch (Exception ex)
@@ -138,7 +153,7 @@ namespace live.videosdk
             return _pluginClass.CallStatic<string>("getVideoDevices");
             //_videoSdkDto.SendDTO("INFO", $"GetVideoDevices");
         }
-            
+
         public string GetSelectedAudioDevice()
         {
             return _pluginClass.CallStatic<string>("getSelectedAudioDevice");
@@ -168,7 +183,7 @@ namespace live.videosdk
             _pluginClass.CallStatic("setVideoEncoderConfig", videoConfig, _applicationContext);
             _videoSdkDto.SendDTO("INFO", $"SetVideoEncoderConfig config: {videoConfig}");
         }
-            
+
         public void PauseAllStreams(string kind)
         {
             _pluginClass.CallStatic("pauseAllStreams", kind);
