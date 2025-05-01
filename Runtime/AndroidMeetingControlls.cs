@@ -20,14 +20,15 @@ namespace live.videosdk
            
             _videoSdkDto = videoSdkDto;
         }
-        public void ToggleWebCam(bool status, string Id)
+        public void ToggleWebCam(bool status, string Id, string customVideoStream = null)
         {
-            _pluginClass.CallStatic("toggleWebCam", status, _applicationContext);
+            Debug.Log("ToggleWebCam => " + customVideoStream);
+            _pluginClass.CallStatic("toggleWebCam", status, customVideoStream,_applicationContext);
             _videoSdkDto.SendDTO("INFO", $"ToggleWebCam:- status:{status} ParticipantId:{Id}");
         }
-        public void ToggleMic(bool status, string Id)
+        public void ToggleMic(bool status, string Id, string customAudioStream = null)
         {
-            _pluginClass.CallStatic("toggleMic", status);
+            _pluginClass.CallStatic("toggleMic", status,customAudioStream, _applicationContext);
             _videoSdkDto.SendDTO("INFO", $"ToggleMic:- status:{status} ParticipantId:{Id}");
         }
 

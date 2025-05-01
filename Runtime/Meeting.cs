@@ -43,10 +43,10 @@ namespace live.videosdk
 
 
         //public event Action<string, string> OnAvailableAudioDevicesCallback;
-        public event Action<Device[], Device> OnAudioDeviceChangedCallback;
+        public event Action<AudioDeviceInfo[], AudioDeviceInfo> OnAudioDeviceChangedCallback;
 
         //public event Action<string, string> OnAvailableVideoDevicesCallback;
-        public event Action<Device[], Device> OnVideoDeviceChangedCallback;
+        public event Action<VideoDeviceInfo[], VideoDeviceInfo> OnVideoDeviceChangedCallback;
 
         #endregion
 
@@ -232,7 +232,7 @@ namespace live.videosdk
             _meetingActivity?.CreateMeetingId(task.Result, token, OnCreateMeeting);
         }
 
-        public void Join(string token, string meetingId, string name, bool micEnabled, bool camEnabled, Dictionary<string, CustomStream> customStreamConfig, string participantId = null)
+        public void Join(string token, string meetingId, string name, bool micEnabled, bool camEnabled, Dictionary<string, ICustomStream> customStreamConfig = null, string participantId = null)
         {
             if (string.IsNullOrEmpty(meetingId))
             {
@@ -254,12 +254,12 @@ namespace live.videosdk
 
             if (customStreamConfig.ContainsKey("Audio"))
             {
-                encorderConfig.Audio = customStreamConfig["Audio"];
+                encorderConfig.Audio = (CustomAudioStream)customStreamConfig["Audio"];
             }
 
             if (customStreamConfig.ContainsKey("Video"))
             {
-                encorderConfig.Video = customStreamConfig["Video"];
+                encorderConfig.Video = (CustomVideoStream)customStreamConfig["Video"];
             }
             Debug.Log($"{encorderConfig.Audio == null}  {encorderConfig.Video == null}");
 
@@ -288,49 +288,49 @@ namespace live.videosdk
             _meetingActivity?.LeaveMeeting();
         }
 
-        public Device[] GetAudioDevices()
+        public AudioDeviceInfo[] GetAudioDevices()
         {
             string availableDevices = _meetingActivity?.GetAudioDevices();
             Debug.Log("GetAudioDevices " + availableDevices);
             // Deserialize directly from array JSON
-            Device[] availableAudioDevice = JsonConvert.DeserializeObject<Device[]>(availableDevices);
+            AudioDeviceInfo[] availableAudioDevice = JsonConvert.DeserializeObject<AudioDeviceInfo[]>(availableDevices);
             return availableAudioDevice;
         }
 
-        public Device[] GetVideoDevices()
+        public VideoDeviceInfo[] GetVideoDevices()
         {
             string availableDevices = _meetingActivity?.GetVideoDevices();
             Debug.Log("GetVideoDevices " + availableDevices);
             //Deserialize directly from array JSON
-            Device[] availableVideoDevice = JsonConvert.DeserializeObject<Device[]>(availableDevices);
+            VideoDeviceInfo[] availableVideoDevice = JsonConvert.DeserializeObject<VideoDeviceInfo[]>(availableDevices);
 
             return availableVideoDevice;
         }
 
-        public Device GetSelectedAudioDevice()
+        public AudioDeviceInfo GetSelectedAudioDevice()
         {
             string audioDevice = _meetingActivity?.GetSelectedAudioDevice();
             Debug.Log("audio device " + audioDevice);
-            Device selectedAudioDevice = JsonConvert.DeserializeObject<Device>(audioDevice);
+            AudioDeviceInfo selectedAudioDevice = JsonConvert.DeserializeObject<AudioDeviceInfo>(audioDevice);
             return selectedAudioDevice;
         }
 
-        public Device GetSelectedVideoDevice()
+        public VideoDeviceInfo GetSelectedVideoDevice()
         {
             string videoDevice = _meetingActivity?.GetSelectedVideoDevice();
             Debug.Log("video device " + videoDevice);
-            Device selectedVideoDevice = JsonConvert.DeserializeObject<Device>(videoDevice);
+            VideoDeviceInfo selectedVideoDevice = JsonConvert.DeserializeObject<VideoDeviceInfo>(videoDevice);
             return selectedVideoDevice;
         }
 
-        public void ChangeAudioDevice(string deviceLabel)
+        public void ChangeAudioDevice(AudioDeviceInfo audioDevice)
         {
-            _meetingActivity?.ChangeAudioDevice(deviceLabel);
+            _meetingActivity?.ChangeAudioDevice(audioDevice.label);
         }
 
-        public void ChangeVideoDevice(string deviceLabel)
+        public void ChangeVideoDevice(VideoDeviceInfo videoDevice)
         {
-            _meetingActivity?.ChangeVideoDevice(deviceLabel);
+            _meetingActivity?.ChangeVideoDevice(videoDevice.label);
         }
         public void PauseAllStreams(StreamKind kind)
         {
@@ -340,16 +340,6 @@ namespace live.videosdk
         {
             _meetingActivity.ResumeAllStreams(kind.ToString().ToLower());
         }
-
-        private void SetVideoEncoderConfig(VideoEncoderConfig config)
-        {
-            _meetingActivity?.SetVideoEncoderConfig(config.ToString());
-        }
-
-        //private IEnumerable<string>GetAudioDevices()
-        //{
-        //    return _avaliableAudioDevicesArray;
-        //}
 
         private void OnMeetingJoinFailed(string errorMessage)
         {
@@ -464,21 +454,12 @@ namespace live.videosdk
                 Debug.Log($"available devices {availableDevice}");
                 Debug.Log($"selectedDeviceJson {selectedDevice}");
 
-                Device[] availableAudioDevice = JsonConvert.DeserializeObject<Device[]>(availableDevice);
-                Device selectedAudioDevice = JsonConvert.DeserializeObject<Device>(selectedDevice);
+                AudioDeviceInfo[] availableAudioDevice = JsonConvert.DeserializeObject<AudioDeviceInfo[]>(availableDevice);
+                AudioDeviceInfo selectedAudioDevice = JsonConvert.DeserializeObject<AudioDeviceInfo>(selectedDevice);
 
                 OnAudioDeviceChangedCallback?.Invoke(availableAudioDevice, selectedAudioDevice);
             });
         }
-
-        //private void OnAvailableAudioDevices(string availableDevices, string selectedDeviceJson)
-        //{
-        //    RunOnUnityMainThread(() =>
-        //    {
-        //        OnAvailableAudioDevicesCallback?.Invoke(availableDevices, selectedDeviceJson);
-        //    });
-        //}
-
 
         private void OnVideoDeviceChanged(string availableDevice, string selectedDevice)
         {
@@ -487,21 +468,12 @@ namespace live.videosdk
                 Debug.Log($"available devices {availableDevice}");
                 Debug.Log($"selectedDeviceJson {selectedDevice}");
 
-                Device[] availableVideoDevice = JsonConvert.DeserializeObject<Device[]>(availableDevice);
-                Device selectedVideoDevice = JsonConvert.DeserializeObject<Device>(selectedDevice);
+                VideoDeviceInfo[] availableVideoDevice = JsonConvert.DeserializeObject<VideoDeviceInfo[]>(availableDevice);
+                VideoDeviceInfo selectedVideoDevice = JsonConvert.DeserializeObject<VideoDeviceInfo>(selectedDevice);
 
                 OnVideoDeviceChangedCallback?.Invoke(availableVideoDevice, selectedVideoDevice);
             });
         }
-
-        //private void OnAvailableVideoDevices(string toTypedArray1, string toTypedArray)
-        //{
-        //    RunOnUnityMainThread(() =>
-        //    {
-        //        OnAvailableVideoDevicesCallback?.Invoke(toTypedArray1, toTypedArray);
-        //    });
-        //}
-
 
         private void OnExternalCallHangup()
         {
@@ -599,7 +571,14 @@ namespace live.videosdk
     }
 
     #region Model Class
-    public class Device
+    public class AudioDeviceInfo
+    {
+        public string label;
+        public string kind;
+        public string deviceId;
+    }
+
+    public class VideoDeviceInfo
     {
         public string label;
         public string kind;
@@ -607,76 +586,68 @@ namespace live.videosdk
         public string facingMode;
     }
 
+
     public enum FacingMode
     {
         front, back
     }
 
-    //public class CustomStream
-    //{
-    //    public Dictionary<string, CustomStreamEntity> data;
-    //    //public string kind;
-    //    //public CustomStreamEntity customStreamEntity;
-    //}
-
-    //public class CustomStreamEntity
-    //{
-    //    public string encorder;
-    //    public bool isMultiStream;
-    //    public string deviceId;
-    //}
-
     [SerializeField]
     public class CustomStreamData
     {
-        public CustomStream Audio;
-        public CustomStream Video;
+        public CustomAudioStream Audio;
+        public CustomVideoStream Video;
     }
 
     [SerializeField]
-    public class CustomStream
+    public class CustomVideoStream : ICustomStream
     {
-        public string encoder { get; private set; }
+        [JsonIgnore]
+        public VideoEncoderConfig videoEncoder { get; private set; }
         public bool isMultiStream { get; private set; }
-        public string deviceId { get; private set; }
+        [JsonIgnore]
+        public VideoDeviceInfo videoDevice{ get; private set; }
 
-        public void SetEncoderConfig(string encoder)
-        {
-            this.encoder = encoder;
-        }
+        [JsonProperty]
+        private string deviceId;
+        [JsonProperty]
+        private string encoder;
 
-        public void SetMultiStream(bool isMultiStream)
+        public CustomVideoStream(VideoEncoderConfig videoEncoder, bool isMultiStream, VideoDeviceInfo videoDevice)
         {
+            this.videoEncoder = videoEncoder;
             this.isMultiStream = isMultiStream;
-        }
-
-        public void SetDevice(string deviceId)
-        {
-            this.deviceId = deviceId;
+            this.videoDevice = videoDevice;
+            deviceId = this.videoDevice.deviceId;
+            encoder = this.videoEncoder.ToString();
         }
     }
 
-    //public class CustomAudioStream
-    //{
-    //    public AudioEncoderConfig audioEncoder { get; private set; }
-    //    public bool isMultiStream { get; private set; }
-    //    public Device selectedAudioDevice { get; private set; }
+    public class CustomAudioStream : ICustomStream
+    {
+        [JsonIgnore]
+        public AudioEncoderConfig audioEncoder { get; private set; }
+        [JsonIgnore]
+        public AudioDeviceInfo audioDevice { get; private set; }
 
-    //    public void SetEncoderConfig(AudioEncoderConfig audioEncoder)
-    //    {
-    //        this.audioEncoder = audioEncoder;
-    //    }
+        [JsonProperty]
+        private string deviceId;
+        [JsonProperty]
+        private string encoder;
 
-    //    public void SetMultiStream(bool isMultiStream)
-    //    {
-    //        this.isMultiStream = isMultiStream;
-    //    }
 
-    //    public void SetDevice(Device selectedAudioDevice)
-    //    {
-    //        this.selectedAudioDevice = selectedAudioDevice;
-    //    }
-    //}
+        public CustomAudioStream(AudioEncoderConfig audioEncoder, AudioDeviceInfo audioDevice)
+        {
+            this.audioEncoder = audioEncoder;
+            this.audioDevice = audioDevice;
+            encoder = this.audioEncoder.ToString();
+            deviceId = this.audioDevice.deviceId;
+        }
+    }
+
+    public interface ICustomStream { }
+   
+
     [System.Serializable]
     public class JoinMeetingConfig
     {

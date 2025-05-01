@@ -226,23 +226,23 @@ namespace live.videosdk
 
 
         #region CallToNative
-        public void ToggleWebCam(bool status)
+        public void ToggleWebCam(bool status, string customVideoStream = null)
         {
             if (_meetControlls == null)
             {
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.ToggleWebCam(status, ParticipantId);
+            _meetControlls.ToggleWebCam(status, ParticipantId,customVideoStream);
         }
-        public void ToggleMic(bool status)
+        public void ToggleMic(bool status, string customAudioStream = null)
         {
             if (_meetControlls == null)
             {
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.ToggleMic(status, ParticipantId);
+            _meetControlls.ToggleMic(status, ParticipantId, customAudioStream);
         }
 
         public void PauseStream(StreamKind kind)

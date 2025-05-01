@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -275,7 +276,7 @@ namespace live.videosdk
             }
         }
 
-        public void SetVideo(bool status)
+        public void SetVideo(bool status, CustomVideoStream customVideoStream = null)
         {
             if (_participant == null) return;
             if (!IsLocal)
@@ -283,10 +284,12 @@ namespace live.videosdk
                 Debug.LogError($"{name} participantId {Id} is not your local participant");
                 return;
             }
-            _participant.ToggleWebCam(status);
+
+            string customVideoStreamStr = JsonConvert.SerializeObject(customVideoStream);
+            _participant.ToggleWebCam(status, customVideoStreamStr);
         }
 
-        public void SetAudio(bool status)
+        public void SetAudio(bool status, CustomAudioStream customAudioStream = null)
         {
             if (_participant == null) return;
             if (!IsLocal)
@@ -294,7 +297,8 @@ namespace live.videosdk
                 Debug.LogError($"{name} participantId {Id} is not your local participant");
                 return;
             }
-            _participant.ToggleMic(status);
+            string customAudioStreamStr = JsonConvert.SerializeObject(customAudioStream);
+            _participant.ToggleMic(status, customAudioStreamStr);
         }
         public void PauseStream(StreamKind kind)
         {
