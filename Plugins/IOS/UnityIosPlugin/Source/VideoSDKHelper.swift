@@ -47,7 +47,7 @@ func OnExternalCallRinging()
 func OnExternalCallHangup()
 
 @_silgen_name("OnAudioDeviceChanged")
-func OnAudioDeviceChanged(_ selectedDevice: UnsafePointer<CChar>, _ deviceList: UnsafePointer<CChar>)
+func OnAudioDeviceChanged(_ availableDevice: UnsafePointer<CChar>, _ selectedDevice: UnsafePointer<CChar>)
 
 @_silgen_name("OnSpeakerChanged")
 func OnSpeakerChanged(_ id : UnsafePointer<CChar>)
@@ -79,51 +79,74 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
     
     private let callObserver = CXCallObserver()
     private var selectedAudioDevice: String?
-    private var encoderConfig: String = "h90p_w160p"
+    private var encoderConfig: CustomVideoTrackConfig = .h240p_w320p
+    private var multiStream: Bool = true
     private var meetingState: MeetingState = .DISCONNECTED
     
+    private var facingMode: CameraFacingMode = .front
+    private var currentVideoDevice: VideoDeviceInfo?
+    private var currentAudioDevice: AudioDeviceInfo?
+    private var portName = AVAudioSession.sharedInstance().currentRoute.inputs.first?.portName ?? ""
+    private let audioSession: AVAudioSession
+    
     override init() {
+        self.audioSession = AVAudioSession.sharedInstance()
         super.init()
         VideoSDK.getAudioPermission()
         VideoSDK.getVideoPermission()
+        try? self.audioSession.setCategory(.playAndRecord, options: [.allowBluetooth, .allowBluetoothA2DP])
         setupCallMonitoring()
-//        setupAudioRouteMonitoring()
+        setupAudioRouteMonitoring()
+        
+        self.portName = self.audioSession.currentRoute.inputs.first?.portName ?? "Speaker"
+        self.currentAudioDevice = AudioDeviceInfo(label: portName, kind: "audio", deviceID: portName)
+        self.currentVideoDevice = facingMode.deviceInfo
     }
     
     private func setupCallMonitoring() {
         callObserver.setDelegate(self, queue: nil)
     }
-
-//    private func setupAudioRouteMonitoring() {
-//        NotificationCenter.default.addObserver(
-//            self,
-//            selector: #selector(handleAudioRouteChange),
-//            name: AVAudioSession.routeChangeNotification,
-//            object: nil
-//        )
-//    }
+    
+        private func setupAudioRouteMonitoring() {
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(handleAudioRouteChange),
+                name: AVAudioSession.routeChangeNotification,
+                object: nil
+            )
+        }
     
     @objc public func joinMeeting(token: String,
-                                 meetingId: String,
-                                 participantName: String,
-                                 micEnabled: Bool,
-                                 webCamEnabled: Bool,
-                                 participantId: String? = nil,
-                                 sdkName: String? = nil,
-                                 sdkVersion: String? = nil) {
+                                  meetingId: String,
+                                  participantName: String,
+                                  micEnabled: Bool,
+                                  webCamEnabled: Bool,
+                                  participantId: String? = nil,
+                                  sdkName: String? = nil,
+                                  sdkVersion: String? = nil,
+                                  encoderConfig: String? = nil) {
+        var (encoderEnum, multi) = (self.encoderConfig, self.multiStream)
+        if let encoderConfig = encoderConfig {
+             (encoderEnum, multi) = extractEncoderConfig(from: encoderConfig)
+             self.encoderConfig = encoderEnum
+             self.multiStream = multi
+        }
         VideoSDK.config(token: token)
         
-        let customVideoTrack = webCamEnabled ? createCustomVideoTrack() : nil
+        let customVideoTrack = webCamEnabled ? createCustomVideoTrack(encoder: encoderEnum, multiStream: multi) : nil
         self.meeting = VideoSDK.initMeeting(
-            meetingId: "pbow-6vec-vahn",
+            meetingId: meetingId,
             participantId: participantId ?? "",
             participantName: participantName,
             micEnabled: micEnabled,
             webcamEnabled: webCamEnabled,
             customCameraVideoStream: customVideoTrack)
         
+        let portName = self.audioSession.currentRoute.inputs.first?.portName ?? "Speaker"
         self.webCamEnabled = webCamEnabled
         self.micEnabled = micEnabled
+        self.currentVideoDevice = webCamEnabled ? facingMode.deviceInfo : nil
+        self.currentAudioDevice = micEnabled ? AudioDeviceInfo(label: portName, kind: "audio", deviceID: portName) : nil
         
         guard let meeting = meeting else {
             // error callback
@@ -144,42 +167,55 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
         self.meeting = nil
     }
     
-    @objc public func toggleWebCam(status: Bool) {
-        guard let meeting = meeting else {
-            // error callback
-            return
-        }
-        if status == self.webCamEnabled {
-            return
-        }
-        if meetingState == .CONNECTED {
-            if status {
-                let customVideoTrack = self.createCustomVideoTrack()
-                meeting.enableWebcam(customVideoStream: customVideoTrack)
-                self.webCamEnabled = true
-            } else {
-                meeting.disableWebcam()
-                self.webCamEnabled = false
+    @objc public func toggleWebCam(status: Bool, encoderConfig: String? = nil) {
+        guard let meeting = meeting,
+              status != webCamEnabled,
+              meetingState == .CONNECTED else { return }
+        
+        if status {
+            var (encoderEnum, multi) = (self.encoderConfig, self.multiStream)
+            if let encoderConfig = encoderConfig {
+                (encoderEnum, multi) = extractEncoderConfig(from: encoderConfig)
+                self.encoderConfig = encoderEnum
+                self.multiStream = multi
             }
+            
+            // Check if preview output buffers are enabled
+            if let videoDataOutput = captureSession?.outputs.first(where: { $0 is AVCaptureVideoDataOutput }) as? AVCaptureVideoDataOutput {
+                // Temporarily disable preview-sized output buffers if necessary
+                videoDataOutput.deliversPreviewSizedOutputBuffers = false
+                
+                let customTrack = createCustomVideoTrack(encoder: encoderEnum, multiStream: multi)
+                meeting.enableWebcam(customVideoStream: customTrack)
+                webCamEnabled = true
+                self.currentVideoDevice = facingMode.deviceInfo
+                
+                // Re-enable preview-sized output buffers after enabling the webcam
+                videoDataOutput.deliversPreviewSizedOutputBuffers = true
+            }
+        } else {
+            meeting.disableWebcam()
+            webCamEnabled = false
+            self.currentVideoDevice = nil
         }
     }
+
     
     @objc public func toggleMic(status: Bool) {
-        guard let meeting = meeting else {
+        guard let meeting = meeting,
+        status != micEnabled,
+        meetingState == .CONNECTED  else {
             // error callback
             return
         }
-        if status == self.micEnabled {
-            return
-        }
-        if meetingState == .CONNECTED {
-            if status {
-                meeting.unmuteMic()
-                self.micEnabled = true
-            } else {
-                meeting.muteMic()
-                self.micEnabled = false
-            }
+        if status {
+            meeting.unmuteMic()
+            self.micEnabled = true
+            self.currentAudioDevice = AudioDeviceInfo(label: portName, kind: "audio", deviceID: portName)
+        } else {
+            meeting.muteMic()
+            self.micEnabled = false
+            self.currentAudioDevice = nil
         }
     }
     
@@ -260,29 +296,39 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
         }
     }
     
-    @objc public func getAudioDevices() -> [String] {
-        return VideoSDK.getAudioDevices()
+    @objc public func getAudioDevices() -> String {
+        let audioDevices = getMics()
+        let devicesArray = audioDevices.map { name, type in
+            return AudioDeviceInfo(label: name, kind: "audio", deviceID: name)
+        }
+        return devicesArray.toJsonString(prettyPrint: true)
+    }
+    
+    @objc public func getSelectedAudioDevice() -> String {
+        return currentAudioDevice?.toJsonString(prettyPrint: true) ?? ""
     }
     
     @objc public func changeAudioDevice(_ device: String) {
         guard let meeting = meeting else {
-            self.selectedAudioDevice = device
+            let device = self.changeMic(selectedDevice: device)
+            self.currentAudioDevice = AudioDeviceInfo(label: device, kind: "audio", deviceID: device)
+            if let devicePtr = (currentAudioDevice.toJsonString(prettyPrint: true) as NSString).utf8String,
+               let listPtr = (getAudioDevices() as NSString).utf8String {
+                OnAudioDeviceChanged(listPtr, devicePtr)
+            }
             return
         }
         meeting.changeMic(selectedDevice: device)
+        self.selectedAudioDevice = device
     }
     
-    @objc public func changeVideoDevice() {
-        meeting?.switchWebcam()
-    }
-    
-    @objc public func setVideoEncoderConfig(config : String) {
-        self.encoderConfig = config
-        guard let meeting = meeting else {
-            return
-        }
-        self.toggleWebCam(status: false)
-        self.toggleWebCam(status: true)
+    @objc public func changeVideoDevice(_ device: String) {
+        guard currentVideoDevice?.deviceID != device else {
+                return
+            }
+            meeting?.switchWebcam()
+            facingMode.toggle()
+            currentVideoDevice = facingMode.deviceInfo
     }
     
     @objc public func setSpeakerMute(status: Bool) {
@@ -300,12 +346,32 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
         }
     }
     
+    @objc public func getVideoDevices() -> String {
+        let cameraNames = VideoSDK.getCameras()
+        let devicesArray = cameraNames.map { name -> VideoDeviceInfo in
+            let mode = name.lowercased().contains("back") ? "back" : "front"
+            return VideoDeviceInfo(label: name,
+                                   kind: "video",
+                                   deviceID: name,
+                                   facingMode: mode)
+        }
+        return devicesArray.toJsonString(prettyPrint: true)
+    }
+    
+    @objc public func getSelectedVideoDevice() -> String {
+        return currentVideoDevice?.toJsonString(prettyPrint: true) ?? ""
+    }
+    
     private func participantToJson(_ participant: Participant) -> [String: Any] {
         return [
             "id": participant.id,
             "displayName": participant.displayName,
             "isLocal": participant.isLocal
         ]
+    }
+    
+    @objc public func dummy() {
+        
     }
 }
 
@@ -334,22 +400,22 @@ extension VideoSDKHelper: MeetingEventListener {
             let enabledLogs = attributes["enabledLogs"] as? Bool ?? false
             
             OnMeetingJoined(meetingIdPtr,
-                           idPtr,
-                           namePtr,
-                           enabledLogs,
-                           logEndPointPtr,
-                           jwtKeyPtr,
-                           peerIdPtr,
-                           sessionIdPtr)
+                            idPtr,
+                            namePtr,
+                            enabledLogs,
+                            logEndPointPtr,
+                            jwtKeyPtr,
+                            peerIdPtr,
+                            sessionIdPtr)
         }
     }
     
     public func onMeetingLeft() {
         guard let localParticipant = self.localParticipant else { return }
-
+        
         participants.removeAll()
         self.localParticipant?.removeEventListener(self)
-
+        
         if let idPtr = (localParticipant.id as NSString).utf8String,
            let namePtr = (localParticipant.displayName as NSString).utf8String {
             OnMeetingLeft(idPtr, namePtr)
@@ -413,30 +479,40 @@ extension VideoSDKHelper: MeetingEventListener {
             OnResumedAllStreams(kindPtr)
         }
     }
-
-//   @objc private func handleAudioRouteChange(notification: Notification) {
-//       guard let userInfo = notification.userInfo,
-//             let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
-//             let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
-//           return
-//       }
-//       
-//       switch reason {
-//       case .newDeviceAvailable, .oldDeviceUnavailable, .override:
-//           let currentRoute = AVAudioSession.sharedInstance().currentRoute
-//           let currentDevice = currentRoute.inputs.first?.portName ?? ""
-////           let deviceList = VideoSDK.getAudioDevices()
-//           
-//           let deviceListString = deviceList.description
-//           if let devicePtr = (currentDevice as NSString).utf8String,
-//              let listPtr = (deviceListString as NSString).utf8String {
-////               OnAudioDeviceChanged(devicePtr, listPtr)
-////               print(currentDevice, deviceList)
-//           }
-//       default:
-//           break
-//       }
-//   }
+    
+    public func onMicChanged(selectedDevice: String) {
+        self.currentAudioDevice = AudioDeviceInfo(label: selectedDevice, kind: "audio", deviceID: selectedDevice)
+        if let devicePtr = (currentAudioDevice.toJsonString(prettyPrint: true) as NSString).utf8String,
+           let listPtr = (getAudioDevices() as NSString).utf8String {
+            OnAudioDeviceChanged(listPtr, devicePtr)
+        }
+    }
+    
+       @objc private func handleAudioRouteChange(notification: Notification) {
+           guard let userInfo = notification.userInfo,
+                 let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+                 let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
+               return
+           }
+    
+           switch reason {
+           case .newDeviceAvailable, .oldDeviceUnavailable, .override:
+               let currentRoute = AVAudioSession.sharedInstance().currentRoute
+               let currentDevice = currentRoute.inputs.first?.portName ?? ""
+    //           let deviceList = VideoSDK.getAudioDevices()
+               let currentDeviceInfo = AudioDeviceInfo(label: currentDevice, kind: "audio", deviceID: currentDevice)
+               self.currentAudioDevice = currentDeviceInfo
+               let deviceList = self.getAudioDevices()
+    
+//               let deviceListString = deviceList.description
+               if let devicePtr = (currentDeviceInfo.toJsonString(prettyPrint: true) as NSString).utf8String,
+                  let listPtr = (deviceList as NSString).utf8String {
+                   OnAudioDeviceChanged(listPtr, devicePtr)
+               }
+           default:
+               break
+           }
+       }
 }
 
 @available(iOS 14.0, *)
@@ -486,8 +562,8 @@ extension VideoSDKHelper: ParticipantEventListener {
         } else if stream.kind == .state(value: .audio) {
             kind = "audio"
         }
-
-           if let idPtr = (participant.id as NSString).utf8String,
+        
+        if let idPtr = (participant.id as NSString).utf8String,
            let dataPtr = (kind as NSString).utf8String {
             OnStreamDisabled(idPtr, dataPtr)
         }
@@ -558,8 +634,8 @@ extension VideoSDKHelper: ParticipantEventListener {
         
         videoTrack.add(renderer)
     }
-
-
+    
+    
     func compressFrame(pixelBuffer: CVPixelBuffer, isLocal: Bool) -> Data? {
         CVPixelBufferLockBaseAddress(pixelBuffer, [])
         
@@ -570,8 +646,8 @@ extension VideoSDKHelper: ParticipantEventListener {
             let scaledExtent = ciImage.extent.applying(CGAffineTransform(scaleX: scale, y: scale))
             
             guard let cgImage = ciContext.createCGImage(ciImage, from: scaledExtent,
-                                                      format: .RGBA8,
-                                                      colorSpace: CGColorSpaceCreateDeviceRGB()) else {
+                                                        format: .RGBA8,
+                                                        colorSpace: CGColorSpaceCreateDeviceRGB()) else {
                 print("Failed to create CGImage")
                 return nil
             }
@@ -595,7 +671,7 @@ extension VideoSDKHelper: ParticipantEventListener {
             return data as Data
         }
     }
-
+    
     func createPixelBuffer(from i420Buffer: RTCI420Buffer) -> CVPixelBuffer? {
         return autoreleasepool { () -> CVPixelBuffer? in
             let width = Int(i420Buffer.width)
@@ -610,11 +686,11 @@ extension VideoSDKHelper: ParticipantEventListener {
             ] as CFDictionary
             
             let status = CVPixelBufferCreate(kCFAllocatorDefault,
-                                           width,
-                                           height,
-                                           kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
-                                           attrs,
-                                           &pixelBuffer)
+                                             width,
+                                             height,
+                                             kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
+                                             attrs,
+                                             &pixelBuffer)
             
             guard status == kCVReturnSuccess, let pixelBuffer = pixelBuffer else { return nil }
             
@@ -655,22 +731,38 @@ extension VideoSDKHelper: ParticipantEventListener {
         }
     }
     
-    func createCustomVideoTrack() -> CustomRTCMediaStream? {
-        var VideoencoderConfig: CustomVideoTrackConfig
-        switch encoderConfig {
-        case "h480p_w640p":
-            VideoencoderConfig = .h480p_w640p
-        case "h720p_w960p":
-            VideoencoderConfig = .h720p_w1280p
-        case "h480p_w720p":
-            VideoencoderConfig = .h480p_w640p
-        default:
-            VideoencoderConfig = .h90p_w160p
-        }
-        guard let customVideoTrack = try? VideoSDK.createCameraVideoTrack(encoderConfig: VideoencoderConfig, facingMode: .front, multiStream: true) else {
+//    func createCustomVideoTrack() -> CustomRTCMediaStream? {
+//        var VideoencoderConfig: CustomVideoTrackConfig
+//        switch encoderConfig {
+//        case "h480p_w640p":
+//            VideoencoderConfig = .h480p_w640p
+//        case "h720p_w960p":
+//            VideoencoderConfig = .h720p_w1280p
+//        case "h480p_w720p":
+//            VideoencoderConfig = .h480p_w640p
+//        default:
+//            VideoencoderConfig = .h90p_w160p
+//        }
+//        guard let customVideoTrack = try? VideoSDK.createCameraVideoTrack(encoderConfig: VideoencoderConfig, facingMode: .front, multiStream: true) else {
+//            return nil
+//        }
+//        return customVideoTrack
+//    }
+    
+    func createCustomVideoTrack(
+        encoder: CustomVideoTrackConfig,
+        multiStream: Bool
+    ) -> CustomRTCMediaStream? {
+        do {
+            return try VideoSDK.createCameraVideoTrack(
+                encoderConfig: encoder,
+                facingMode:    .front,
+                multiStream:   multiStream
+            )
+        } catch {
+            print("Failed to create custom video track:", error)
             return nil
         }
-        return customVideoTrack
     }
 }
 
@@ -692,6 +784,167 @@ extension VideoSDKHelper: CXCallObserverDelegate {
     }
 }
 
+extension VideoSDKHelper {
+    
+    func getMics() -> [(deviceName: String, deviceType: String)] {
+        let audioSession = AVAudioSession.sharedInstance()
+        
+        var devices: [(String, String)] = [("Speaker", "Speaker")]
+        for input in audioSession.availableInputs! {
+            print(input.portName, input.portType)
+            let deviceName: String = input.portName
+            let deviceType: String =  (deviceName == "iPhone Microphone") ? "Receiver" : input.portType.rawValue
+            let device = (deviceName,deviceType)
+            devices.append(device)
+        }
+        
+        let wiredHeadsetAvailable = audioSession.availableInputs?.contains { $0.portType == AVAudioSession.Port.headsetMic } ?? false
+
+        if (wiredHeadsetAvailable) {
+            devices.remove(at: 1)
+            
+        }
+        
+        devices = devices.map({ device in
+            var updatedDevice = device
+            if device.1.lowercased() == "microphonewired" {
+                    updatedDevice.0 = "Headphones"
+                    updatedDevice.1 = "Headphones"
+                }
+                return updatedDevice
+        })
+        
+        return devices
+    }
+    
+    func changeMic(selectedDevice: String) -> String {
+        let deviceSelected: String = selectedDevice
+        for input in audioSession.availableInputs! {
+            
+            if(selectedDevice == input.portName) {
+                
+                switch input.portType {
+                    
+                case AVAudioSession.Port.bluetoothLE, AVAudioSession.Port.bluetoothHFP, AVAudioSession.Port.bluetoothA2DP:
+                        DispatchQueue.main.async {
+                            do {
+                                try self.audioSession.overrideOutputAudioPort(AVAudioSession.PortOverride.none)
+                                try self.audioSession.setPreferredInput(input)
+                            } catch let error as NSError {
+                                print("error changing to bluetooth device \(error.localizedDescription)")
+                            }
+                        }
+
+                        return deviceSelected
+                    
+                case AVAudioSession.Port.builtInReceiver:
+                        DispatchQueue.main.async {
+                            do {
+                                try self.audioSession.overrideOutputAudioPort(AVAudioSession.PortOverride.none)
+                                try self.audioSession.setPreferredInput(input)
+                            } catch let error as NSError {
+                                print("error changing to built-in device \(error.localizedDescription)")
+                            }
+                        }
+                        return deviceSelected
+
+                case AVAudioSession.Port.headphones, AVAudioSession.Port.headsetMic:
+                        DispatchQueue.main.async {
+                            do {
+                                try self.audioSession.overrideOutputAudioPort(AVAudioSession.PortOverride.none)
+                                try self.audioSession.setPreferredInput(input)
+                            } catch let error as NSError {
+                                print("error changing to headphones \(error.localizedDescription)")
+                            }
+                        }
+                        return deviceSelected
+                 
+                case AVAudioSession.Port.builtInMic:
+                        DispatchQueue.main.async {
+                            do {
+                                try self.audioSession.overrideOutputAudioPort(AVAudioSession.PortOverride.none)
+                                try self.audioSession.setPreferredInput(input)
+                            } catch let error as NSError {
+                                print("error changing to headphones \(error.localizedDescription)")
+                            }
+                        }
+                        return deviceSelected
+                    
+                default:
+                        DispatchQueue.main.async {
+                            do {
+                                try self.audioSession.overrideOutputAudioPort(AVAudioSession.PortOverride.speaker)
+                            } catch let error as NSError {
+                                print("error changing to speaker \(error.localizedDescription)")
+                            }
+                        }
+                        return deviceSelected
+                }
+
+            }
+
+            if(selectedDevice.lowercased().contains("headphones")) {
+                DispatchQueue.main.async {
+                    do {
+                        try self.audioSession.overrideOutputAudioPort(AVAudioSession.PortOverride.none)
+                        try self.audioSession.setPreferredInput(input)
+                    } catch let error as NSError {
+                        print("error changing to speaker \(error.localizedDescription)")
+                    }
+                }
+                return deviceSelected
+            }
+            
+        }
+        
+        if(selectedDevice.lowercased().contains("speaker")) {
+            DispatchQueue.main.async {
+                do {
+                    try self.audioSession.overrideOutputAudioPort(AVAudioSession.PortOverride.speaker)
+                } catch let error as NSError {
+                    print("error changing to speaker \(error.localizedDescription)")
+                }
+            }
+            return deviceSelected
+        }
+        
+        return "Device was not changed"
+    }
+    
+    private func extractEncoderConfig(from json: String)
+    -> (encoder: CustomVideoTrackConfig, multiStream: Bool)
+    {
+        var videoEnum: CustomVideoTrackConfig = .h240p_w320p
+        var multiStream = true
+        
+        guard
+            let data = json.data(using: .utf8),
+            let obj  = try? JSONSerialization.jsonObject(with: data),
+            let dict = obj as? [String:Any]
+        else {
+            return (videoEnum, multiStream)
+        }
+        
+        let rawEncoder    = dict["encoder"]       as? String ?? ""
+        multiStream       = dict["isMultiStream"] as? Bool   ?? true
+        
+        switch rawEncoder {
+        case "h240p_w320p":
+            videoEnum = .h240p_w320p
+        case "h480p_w640p":
+            videoEnum = .h480p_w640p
+        case "h720p_w1280p", "h720p_w960p":
+            videoEnum = .h720p_w1280p
+        case "h1080p_w1440p":
+            videoEnum = .h1080p_w1440p
+        default:
+            videoEnum = .h240p_w320p
+        }
+        
+        return (videoEnum, multiStream)
+    }
+}
+
 private class EmptyRenderer: NSObject, RTCVideoRenderer {
     var frameHandler: ((RTCVideoFrame) -> Void)?
     func setSize(_ size: CGSize) {
@@ -702,7 +955,7 @@ private class EmptyRenderer: NSObject, RTCVideoRenderer {
         guard let frame = frame else {
             return
         }
-           frameHandler?(frame)
+        frameHandler?(frame)
     }
 }
 
@@ -713,3 +966,51 @@ extension Dictionary {
     }
 }
 
+// Helpers
+
+public struct AudioDeviceInfo: Codable {
+    var label: String
+    var kind: String
+    var deviceID: String
+}
+
+public struct VideoDeviceInfo: Codable {
+    var label: String
+    var kind: String
+    var deviceID: String
+    var facingMode: String
+}
+
+enum CameraFacingMode: String {
+    case front
+    case back
+
+    mutating func toggle() {
+        self = (self == .front) ? .back : .front
+    }
+
+    var displayName: String {
+        switch self {
+        case .front: return "Front Camera"
+        case .back:  return "Back Camera"
+        }
+    }
+
+    var deviceInfo: VideoDeviceInfo {
+        VideoDeviceInfo(
+            label: displayName,
+            kind:  "video",
+            deviceID:   displayName,
+            facingMode: rawValue
+        )
+    }
+}
+
+extension Encodable {
+    func toJsonString(prettyPrint: Bool = false) -> String {
+        let encoder = JSONEncoder()
+        if prettyPrint { encoder.outputFormatting = .prettyPrinted }
+        guard let data = try? encoder.encode(self) else { return "" }
+        return String(data: data, encoding: .utf8) ?? ""
+    }
+}

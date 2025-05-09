@@ -13,9 +13,9 @@ namespace live.videosdk
              _videoSdkDto = videoSdkDto;
         }
 
-        public void ToggleWebCam(bool status,string Id)
+        public void ToggleWebCam(bool status,string Id, string customVideoStream = null)
         {
-            toggleWebCam(status,Id);
+            toggleWebCam(status,Id, customVideoStream);
             _videoSdkDto.SendDTO("INFO", $"ToggleWebCam:- status:{status} ParticipantId:{Id}");
         }
 
@@ -40,9 +40,9 @@ namespace live.videosdk
 
 
         [DllImport("__Internal")]
-        private static extern void toggleWebCam(bool status,string Id);
+        private static extern void toggleWebCam(bool status,string Id, string customVideoStream = null);
         [DllImport("__Internal")]
-        private static extern void toggleMic(bool status,string Id);
+        private static extern void toggleMic(bool status,string Id, string customAudioStream = null);
         [DllImport("__Internal")]
         private static extern void pauseStream(string kind,string Id);
         [DllImport("__Internal")]

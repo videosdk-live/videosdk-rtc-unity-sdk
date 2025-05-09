@@ -17,8 +17,8 @@ namespace live.videosdk
         event Action<StreamKind> OnStreamPausedCallaback;
         event Action<StreamKind> OnStreamResumedCallaback;
 
-        void ToggleMic(bool status, string customAudioStream);
-        void ToggleWebCam(bool status, string customVideoStream = null);
+        void ToggleMic(bool status);
+        void ToggleWebCam(bool status, string customVideoStream);
         void PauseStream(StreamKind kind);
         void ResumeStream(StreamKind kind);
         void OnParticipantLeft();

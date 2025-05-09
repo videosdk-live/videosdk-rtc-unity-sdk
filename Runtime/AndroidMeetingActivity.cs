@@ -55,17 +55,9 @@ namespace live.videosdk
         public void SubscribeToError(Action<string> callback) => _meetCallback.SubscribeToError(callback);
         public void UnsubscribeFromError(Action<string> callback) => _meetCallback.UnsubscribeFromError(callback);
 
-        //public void SubscribeToAvailableAudioDevices(Action<string, string> callback) => _meetCallback.SubscribeToAvailableAudioDevices(callback);
-        //public void UnsubscribeFromAvailableAudioDevices(Action<string, string> callback) => _meetCallback.UnsubscribeFromAvailableAudioDevices(callback);
-
         public void SubscribeToAudioDeviceChanged(Action<string, string> callback) => _meetCallback.SubscribeToAudioDeviceChanged(callback);
         public void UnsubscribeFromAudioDeviceChanged(Action<string, string> callback) => _meetCallback.UnsubscribeFromAudioDeviceChanged(callback);
 
-        //public void SubscribeToAvailableVideoDevices(Action<string, string> callback) => _meetCallback.SubscribeToAvailableVideoDevices(callback);
-        //public void UnsubscribeFromAvailableVideoDevices(Action<string, string> callback) => _meetCallback.UnsubscribeFromAvailableVideoDevices(callback);
-
-        public void SubscribeToVideoDeviceChanged(Action<string, string> callback) => _meetCallback.SubscribeToVideoDeviceChanged(callback);
-        public void UnsubscribeFromVideoDeviceChanged(Action<string, string> callback) => _meetCallback.UnsubscribeFromVideoDeviceChanged(callback);
 
         public void SubscribeToSpeakerChanged(Action<string> callback) => _meetCallback.SubscribeToSpeakerChanged(callback);
         public void UnsubscribeFromSpeakerChanged(Action<string> callback) => _meetCallback.UnsubscribeFromSpeakerChanged(callback);
@@ -104,7 +96,7 @@ namespace live.videosdk
 
         }
 
-        public void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId, string packageVersion, CustomStreamData encorderConfig)
+        public void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId, string packageVersion, CustomVideoStream encorderConfig)
         {
             try
             {

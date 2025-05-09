@@ -23,10 +23,10 @@ typedef void (*OnVideoFrameReceivedDelegate)(const char* id, const unsigned char
 typedef void (*OnExternalCallStartedDelegate)();
 typedef void (*OnExternalCallRingingDelegate)();
 typedef void (*OnExternalCallHangupDelegate)();
-typedef void (*OnAudioDeviceChangedDelegate)(const char* selectedDevice, const char* deviceList);
 typedef void (*OnSpeakerChangedDelegate)(const char* id);
-typedef void (*onPausedAllStreamsDelegate)(const char* kind);
-typedef void (*onResumedAllStreamsDelegate)(const char* kind);
+typedef void (*OnPausedAllStreamsDelegate)(const char* kind);
+typedef void (*OnResumedAllStreamsDelegate)(const char* kind);
+typedef void (*OnAudioDeviceChangedDelegate)(const char* availableDevice, const char* selectedDevice);
 
 static OnMeetingJoinedDelegate onMeetingJoinedCallback = NULL;
 static OnMeetingLeftDelegate onMeetingLeftCallback = NULL;
@@ -40,14 +40,15 @@ static OnVideoFrameReceivedDelegate onVideoFrameReceivedCallback = NULL;
 static OnExternalCallStartedDelegate onExternalCallStartedCallback = NULL;
 static OnExternalCallRingingDelegate onExternalCallRingingCallback = NULL;
 static OnExternalCallHangupDelegate onExternalCallHangupCallback = NULL;
-static OnAudioDeviceChangedDelegate onAudioDeviceChangedCallback = NULL;
 static OnSpeakerChangedDelegate onSpeakerChangedCallback = NULL;
-static onPausedAllStreamsDelegate onPausedAllStreamsCallback = NULL;
-static onResumedAllStreamsDelegate onResumedAllStreamsCallback = NULL;
+static OnPausedAllStreamsDelegate onPausedAllStreamsCallback = NULL;
+static OnResumedAllStreamsDelegate onResumedAllStreamsCallback = NULL;
+static OnAudioDeviceChangedDelegate onAudioDeviceChangedCallback = NULL;
+
 
 #pragma mark - Functions called by unity
 
-void joinMeeting(const char* token, const char* meetingId, const char* name, bool micEnable, bool camEnable, const char* participantId, const char* sdkVersion, const char* sdkName) {
+void joinMeeting(const char* token, const char* meetingId, const char* name, bool micEnable, bool camEnable, const char* participantId, const char* sdkVersion, const char* sdkName, const char* encoderConfig) {
     NSString *tokenStr = [NSString stringWithUTF8String:token];
     NSString *meetingIdStr = [NSString stringWithUTF8String:meetingId];
     NSString *nameStr = [NSString stringWithUTF8String:name];
@@ -56,24 +57,27 @@ void joinMeeting(const char* token, const char* meetingId, const char* name, boo
     NSString *participantIdStr = participantId ? [NSString stringWithUTF8String:participantId] : nil;
     NSString *sdkVersionStr = sdkVersion ? [NSString stringWithUTF8String:sdkVersion] : nil;
     NSString *sdkNameStr = sdkName ? [NSString stringWithUTF8String:sdkName] : nil;
+    NSString *encoderConfigStr = encoderConfig ? [NSString stringWithUTF8String:encoderConfig] : nil;
     
-    [[VideoSDKHelper shared] joinMeetingWithToken:tokenStr 
+    [[VideoSDKHelper shared] joinMeetingWithToken:tokenStr
                                             meetingId:meetingIdStr
                                             participantName:nameStr
                                             micEnabled:micEnable
                                             webCamEnabled:camEnable
                                             participantId:participantIdStr
                                             sdkName:sdkNameStr
-                                            sdkVersion:sdkVersionStr];
+                                            sdkVersion:sdkVersionStr
+                                            encoderConfig:encoderConfigStr];
 }
 
 void leave() {
     [[VideoSDKHelper shared] leaveMeeting];
 }
 
-void toggleWebCam(bool status, const char* Id) {
+void toggleWebCam(bool status, const char* Id, const char* encoderConfig) {
     NSString *participantId = [NSString stringWithUTF8String:Id];
-    [[VideoSDKHelper shared] toggleWebCamWithStatus:status];
+    NSString *encoderConfigStr = encoderConfig ? [NSString stringWithUTF8String:encoderConfig] : nil;
+    [[VideoSDKHelper shared] toggleWebCamWithStatus:status encoderConfig:encoderConfigStr];
 }
 
 void toggleMic(bool status, const char* Id) {
@@ -104,9 +108,31 @@ void resumeStream(const char* participantId, const char* kind) {
 }
 
 const char* getAudioDevices() {
-    NSArray<NSString *> *devices = [[VideoSDKHelper shared] getAudioDevices];
-    NSString *devicesString = [devices componentsJoinedByString:@","];
-    return strdup([devicesString UTF8String]);
+    @autoreleasepool {
+        NSString *json = [[VideoSDKHelper shared] getAudioDevices];
+        return strdup([json UTF8String]);
+    }
+}
+
+const char* getVideoDevices() {
+    @autoreleasepool {
+        NSString *json = [[VideoSDKHelper shared] getVideoDevices];
+        return strdup([json UTF8String]);
+    }
+}
+
+const char* getSelectedAudioDevice() {
+    @autoreleasepool {
+        NSString *json = [[VideoSDKHelper shared] getSelectedAudioDevice];
+        return strdup([json UTF8String]);
+    }
+}
+
+const char* getSelectedVideoDevice() {
+    @autoreleasepool {
+        NSString *json = [[VideoSDKHelper shared] getSelectedVideoDevice];
+        return strdup([json UTF8String]);
+    }
 }
 
 void changeAudioDevice(const char* device) {
@@ -114,17 +140,18 @@ void changeAudioDevice(const char* device) {
     [[VideoSDKHelper shared] changeAudioDevice:deviceStr];
 }
 
-void changeVideoDevice() {
-    [[VideoSDKHelper shared] changeVideoDevice];
-}
-
-void setVideoEncoderConfig(const char* config) {
-    NSString *configStr = [NSString stringWithUTF8String:config];
-    [[VideoSDKHelper shared] setVideoEncoderConfigWithConfig:configStr];
+void changeVideoDevice(const char* device) {
+    NSString *deviceStr = [NSString stringWithUTF8String:device];
+    [[VideoSDKHelper shared] changeVideoDevice:deviceStr];
 }
 
 void setSpeakerMute(bool status) {
     [[VideoSDKHelper shared] setSpeakerMuteWithStatus:status];
+}
+
+void setVideoEncoderConfig(const char* config) {
+    NSString *configStr = [NSString stringWithUTF8String:config];
+//    [[VideoSDKHelper shared] setVideoEncoderConfigWithConfig:configStr];
 }
 
 #pragma mark - Register Callback function
@@ -140,8 +167,9 @@ void RegisterMeetingCallbacks(
     OnExternalCallStartedDelegate onExternalCallStarted,
     OnExternalCallRingingDelegate onExternalCallRinging,
     OnExternalCallHangupDelegate onExternalCallHangup,
-    onPausedAllStreamsDelegate onPausedAllStreams,
-    onResumedAllStreamsDelegate onResumedAllStreams) {
+    OnPausedAllStreamsDelegate onPausedAllStreams,
+    OnResumedAllStreamsDelegate onResumedAllStreams,
+    OnAudioDeviceChangedDelegate onAudioDeviceChanged) {
     
     onMeetingJoinedCallback = onMeetingJoined;
     onMeetingLeftCallback = onMeetingLeft;
@@ -155,7 +183,8 @@ void RegisterMeetingCallbacks(
     onExternalCallHangupCallback = onExternalCallHangup;
     onPausedAllStreamsCallback = onPausedAllStreams;
     onResumedAllStreamsCallback = onResumedAllStreams;
-    
+    onAudioDeviceChangedCallback = onAudioDeviceChanged;
+    [[VideoSDKHelper shared] dummy];
     NSLog(@"Meeting callbacks registered successfully");
 }
 
@@ -257,9 +286,9 @@ void OnExternalCallHangup() {
     }
 }
 
-void OnAudioDeviceChanged(const char* selectedDevice, const char* deviceList) {
+void OnAudioDeviceChanged(const char* availableDevice, const char* selectedDevice) {
     if (onAudioDeviceChangedCallback) {
-        onAudioDeviceChangedCallback(selectedDevice, deviceList);
+        onAudioDeviceChangedCallback(availableDevice, selectedDevice);
     }
 }
 

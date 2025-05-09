@@ -6,7 +6,7 @@ namespace live.videosdk
     internal interface IMeetingActivity
     {
         void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess);
-        void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId, string packageVersion, CustomStreamData encorderConfig);
+        void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId, string packageVersion, CustomVideoStream encorderConfig);
         void LeaveMeeting();
         string GetAudioDevices();
         string GetVideoDevices();
@@ -22,12 +22,10 @@ namespace live.videosdk
         void SubscribeToExternalCallRinging(Action callback);
         void SubscribeToExternalCallStarted(Action callback);
 
-
         //void SubscribeToAvailableAudioDevices(Action<string, string> callback);
         void SubscribeToAudioDeviceChanged(Action<string, string> callback);
 
         //void SubscribeToAvailableVideoDevices(Action<string, string> callback);
-        void SubscribeToVideoDeviceChanged(Action<string, string> callback);
 
 
         void SubscribeToMeetingJoined(Action<string, string, string, bool, bool, string, string, string, string> callback);
@@ -39,11 +37,7 @@ namespace live.videosdk
         void SubscribeToResumedAllStreams(Action<string> callback);
         void SubscribeToPausedAllStreams(Action<string> callback);
 
-        //void UnsubscribeFromAvailableAudioDevices(Action<string, string> callback);
         void UnsubscribeFromAudioDeviceChanged(Action<string, string> callback);
-
-        //void UnsubscribeFromAvailableVideoDevices(Action<string, string> callback);
-        void UnsubscribeFromVideoDeviceChanged(Action<string, string> callback);
 
         void UnsubscribeFromError(Action<string> callback);
         void UnsubscribeFromExternalCallHangup(Action callback);

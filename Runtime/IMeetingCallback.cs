@@ -7,13 +7,7 @@ namespace live.videosdk
         void SubscribeToPausedAllStreams(Action<string> callback);
         void SubscribeToResumedAllStreams(Action<string> callback);
 
-
-        //void SubscribeToAvailableAudioDevices(Action<string, string> callback);
         void SubscribeToAudioDeviceChanged(Action<string, string> callback);
-
-        //void SubscribeToAvailableVideoDevices(Action<string, string> callback);
-        void SubscribeToVideoDeviceChanged(Action<string, string> callback);
-
 
         void SubscribeToError(Action<string> callback);
         void SubscribeToExternalCallHangup(Action callback);
@@ -27,11 +21,6 @@ namespace live.videosdk
         void SubscribeToSpeakerChanged(Action<string> callback);
 
         void UnsubscribeFromAudioDeviceChanged(Action<string, string> callback);
-        void UnsubscribeFromAvailableAudioDevices(Action<string, string> callback);
-
-        void UnsubscribeFromVideoDeviceChanged(Action<string, string> callback);
-        void UnsubscribeFromAvailableVideoDevices(Action<string, string> callback);
-
 
         void UnsubscribeFromError(Action<string> callback);
         void UnsubscribeFromExternalCallHangup(Action callback);

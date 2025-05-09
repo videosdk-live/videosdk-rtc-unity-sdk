@@ -20,8 +20,8 @@ namespace live.videosdk
         private const string _authMeetingUri = "https://api.videosdk.live/v2/rooms/validate/";
         private static readonly ConcurrentDictionary<string, IUser> _participantsDict = new ConcurrentDictionary<string, IUser>();
         public string MeetingID { get; private set; }
-        public MeetingState MeetingState { get { return _meetState; } }
-        private MeetingState _meetState;
+        public static MeetingState MeetingState { get { return _meetState; } }
+        private static MeetingState _meetState;
         private string[] _avaliableAudioDevicesArray;
         private IMeetingActivity _meetingActivity;
         private IVideoSDKDTO _videoSdkDto;
@@ -46,7 +46,6 @@ namespace live.videosdk
         public event Action<AudioDeviceInfo[], AudioDeviceInfo> OnAudioDeviceChangedCallback;
 
         //public event Action<string, string> OnAvailableVideoDevicesCallback;
-        public event Action<VideoDeviceInfo[], VideoDeviceInfo> OnVideoDeviceChangedCallback;
 
         #endregion
 
@@ -150,7 +149,6 @@ namespace live.videosdk
             _meetingActivity.SubscribeToAudioDeviceChanged(OnAudioDeviceChanged);
 
             //_meetingActivity.SubscribeToAvailableVideoDevices(OnAvailableVideoDevices);
-            _meetingActivity.SubscribeToVideoDeviceChanged(OnVideoDeviceChanged);
 
             _meetingActivity.SubscribeToSpeakerChanged(OnSpeakerChanged);
             _meetingActivity.SubscribeToExternalCallStarted(OnExternalCallStarted);
@@ -173,7 +171,6 @@ namespace live.videosdk
             _meetingActivity.UnsubscribeFromAudioDeviceChanged(OnAudioDeviceChanged);
 
             //_meetingActivity.UnsubscribeFromAvailableVideoDevices(OnAvailableVideoDevices);
-            _meetingActivity.UnsubscribeFromVideoDeviceChanged(OnVideoDeviceChanged);
 
 
             _meetingActivity.UnsubscribeFromSpeakerChanged(OnSpeakerChanged);
@@ -232,7 +229,7 @@ namespace live.videosdk
             _meetingActivity?.CreateMeetingId(task.Result, token, OnCreateMeeting);
         }
 
-        public void Join(string token, string meetingId, string name, bool micEnabled, bool camEnabled, Dictionary<string, ICustomStream> customStreamConfig = null, string participantId = null)
+        public void Join(string token, string meetingId, string name, bool micEnabled, bool camEnabled, CustomVideoStream encorderConfig = null, string participantId = null)
         {
             if (string.IsNullOrEmpty(meetingId))
             {
@@ -249,24 +246,10 @@ namespace live.videosdk
                 Debug.LogError("Invalid Join Meeting Arguments Name can't be null or empty");
                 return;
             }
-
-            CustomStreamData encorderConfig = new CustomStreamData();
-
-            if (customStreamConfig.ContainsKey("Audio"))
-            {
-                encorderConfig.Audio = (CustomAudioStream)customStreamConfig["Audio"];
-            }
-
-            if (customStreamConfig.ContainsKey("Video"))
-            {
-                encorderConfig.Video = (CustomVideoStream)customStreamConfig["Video"];
-            }
-            Debug.Log($"{encorderConfig.Audio == null}  {encorderConfig.Video == null}");
-
             StartCoroutine(JoinMeetingIdCoroutine(token, meetingId, name, micEnabled, camEnabled, encorderConfig, participantId));
         }
 
-        private IEnumerator JoinMeetingIdCoroutine(string token, string meetingId, string name, bool micEnabled, bool camEnabled, CustomStreamData encorderConfig, string participantId = null)
+        private IEnumerator JoinMeetingIdCoroutine(string token, string meetingId, string name, bool micEnabled, bool camEnabled, CustomVideoStream encorderConfig, string participantId = null)
         {
             string meetingUri = CombinePath(_customMeetingUri, meetingId);
             var task = _apiCaller.CallApi(meetingUri, token, "");
@@ -461,20 +444,6 @@ namespace live.videosdk
             });
         }
 
-        private void OnVideoDeviceChanged(string availableDevice, string selectedDevice)
-        {
-            RunOnUnityMainThread(() =>
-            {
-                Debug.Log($"available devices {availableDevice}");
-                Debug.Log($"selectedDeviceJson {selectedDevice}");
-
-                VideoDeviceInfo[] availableVideoDevice = JsonConvert.DeserializeObject<VideoDeviceInfo[]>(availableDevice);
-                VideoDeviceInfo selectedVideoDevice = JsonConvert.DeserializeObject<VideoDeviceInfo>(selectedDevice);
-
-                OnVideoDeviceChangedCallback?.Invoke(availableVideoDevice, selectedVideoDevice);
-            });
-        }
-
         private void OnExternalCallHangup()
         {
             RunOnUnityMainThread(() =>
@@ -544,17 +513,6 @@ namespace live.videosdk
         h720p_w1280p,
         h360p_w640p
     }
-
-    public enum AudioEncoderConfig
-    {
-        speech_low_quality,
-        speech_standard,
-        music_standard,
-        standard_stereo,
-        high_quality,
-        high_quality_stereo
-    }
-
     public enum MeetingState
     {
         NONE,
@@ -571,19 +529,20 @@ namespace live.videosdk
     }
 
     #region Model Class
+    [Serializable]
     public class AudioDeviceInfo
     {
         public string label;
         public string kind;
         public string deviceId;
     }
-
+    [Serializable]
     public class VideoDeviceInfo
     {
         public string label;
         public string kind;
         public string deviceId;
-        public string facingMode;
+        public FacingMode facingMode;
     }
 
 
@@ -593,20 +552,13 @@ namespace live.videosdk
     }
 
     [SerializeField]
-    public class CustomStreamData
-    {
-        public CustomAudioStream Audio;
-        public CustomVideoStream Video;
-    }
-
-    [SerializeField]
-    public class CustomVideoStream : ICustomStream
+    public class CustomVideoStream
     {
         [JsonIgnore]
         public VideoEncoderConfig videoEncoder { get; private set; }
         public bool isMultiStream { get; private set; }
         [JsonIgnore]
-        public VideoDeviceInfo videoDevice{ get; private set; }
+        public VideoDeviceInfo videoDevice { get; private set; }
 
         [JsonProperty]
         private string deviceId;
@@ -623,31 +575,6 @@ namespace live.videosdk
         }
     }
 
-    public class CustomAudioStream : ICustomStream
-    {
-        [JsonIgnore]
-        public AudioEncoderConfig audioEncoder { get; private set; }
-        [JsonIgnore]
-        public AudioDeviceInfo audioDevice { get; private set; }
-
-        [JsonProperty]
-        private string deviceId;
-        [JsonProperty]
-        private string encoder;
-
-
-        public CustomAudioStream(AudioEncoderConfig audioEncoder, AudioDeviceInfo audioDevice)
-        {
-            this.audioEncoder = audioEncoder;
-            this.audioDevice = audioDevice;
-            encoder = this.audioEncoder.ToString();
-            deviceId = this.audioDevice.deviceId;
-        }
-    }
-
-    public interface ICustomStream { }
-   
-
     [System.Serializable]
     public class JoinMeetingConfig
     {
@@ -659,10 +586,10 @@ namespace live.videosdk
         public string participantId = null;
         public string packageVersion;
         public string platform;
-        public CustomStreamData encorderConfig;
+        public CustomVideoStream encorderConfig;
 
         public JoinMeetingConfig(string token, string meetingId, string name, bool micEnabled,
-            bool camEnabled, string participantId, string packageVersion, string platform, CustomStreamData encorderConfig)
+            bool camEnabled, string participantId, string packageVersion, string platform, CustomVideoStream encorderConfig)
         {
             this.token = token;
             this.meetingId = meetingId;

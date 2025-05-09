@@ -98,7 +98,7 @@ namespace live.videosdk
         {
             _renderer = GetComponentInChildren<Renderer>();
             _rawImage = GetComponentInChildren<RawImage>();
-            _videoTexture = new Texture2D(720, 480, TextureFormat.RGBA32, false);
+            _videoTexture = new Texture2D(960, 720, TextureFormat.RGBA32, false);
             Flip(FlipTexture);
         }
 
@@ -289,7 +289,7 @@ namespace live.videosdk
             _participant.ToggleWebCam(status, customVideoStreamStr);
         }
 
-        public void SetAudio(bool status, CustomAudioStream customAudioStream = null)
+        public void SetAudio(bool status)
         {
             if (_participant == null) return;
             if (!IsLocal)
@@ -297,8 +297,7 @@ namespace live.videosdk
                 Debug.LogError($"{name} participantId {Id} is not your local participant");
                 return;
             }
-            string customAudioStreamStr = JsonConvert.SerializeObject(customAudioStream);
-            _participant.ToggleMic(status, customAudioStreamStr);
+            _participant.ToggleMic(status);
         }
         public void PauseStream(StreamKind kind)
         {

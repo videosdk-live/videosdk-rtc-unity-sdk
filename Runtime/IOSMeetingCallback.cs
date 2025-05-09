@@ -25,18 +25,19 @@ namespace live.videosdk
 
         static IOSMeetingCallback()
         {
-            RegisterMeetingCallbacks(OnMeetingJoined,
-          OnMeetingLeft,
-          OnParticipantJoined,
-          OnParticipantLeft,
-          OnMeetingStateChanged,
-          OnError,
-          OnSpeakerChanged,
-          OnExternalCallStarted,
-          OnExternalCallRinging,
-          OnExternalCallHangup,
-          OnPausedAllStreams,
-          OnResumedAllStreams
+              RegisterMeetingCallbacks(OnMeetingJoined,
+              OnMeetingLeft,
+              OnParticipantJoined,
+              OnParticipantLeft,
+              OnMeetingStateChanged,
+              OnError,
+              OnSpeakerChanged,
+              OnExternalCallStarted,
+              OnExternalCallRinging,
+              OnExternalCallHangup,
+              OnPausedAllStreams,
+              OnResumedAllStreams,
+              OnAudioDeviceChanged
               );
         }
 
@@ -101,24 +102,14 @@ namespace live.videosdk
             OnErrorCallback -= callback;
         }
 
-        public void SubscribeToAudioDeviceChanged(Action<string, string[]> callback)
+        public void SubscribeToAudioDeviceChanged(Action<string, string> callback)
         {
             OnAudioDeviceChangedCallback += callback;
         }
 
-        public void UnsubscribeFromAudioDeviceChanged(Action<string, string[]> callback)
+        public void UnsubscribeFromAudioDeviceChanged(Action<string, string> callback)
         {
             OnAudioDeviceChangedCallback -= callback;
-        }
-
-        public void SubscribeToFetchAudioDevice(Action<string[]> callback)
-        {
-            OnFetchAudioDeviceCallback += callback;
-        }
-
-        public void UnsubscribeFromFetchAudioDevice(Action<string[]> callback)
-        {
-            OnFetchAudioDeviceCallback -= callback;
         }
 
         public void SubscribeToSpeakerChanged(Action<string> callback)
@@ -176,16 +167,15 @@ namespace live.videosdk
             OnResumedAllStreamsCallback -= callback;
         }
 
-
-
         private event Action<string, string, string, bool, bool , string , string , string , string > OnMeetingJoinedCallback;
         private event Action<string, string, bool> OnMeetingLeftCallback;
         private event Action<string, string, bool> OnParticipantJoinedCallback;
         private event Action<string, string, bool> OnParticipantLeftCallback;
         private event Action<string> OnErrorCallback;
         private event Action<string> OnMeetingStateChangedCallback;
-        private event Action<string, string[]> OnAudioDeviceChangedCallback;
-        private event Action<string[]> OnFetchAudioDeviceCallback;
+
+        private event Action<string, string> OnAudioDeviceChangedCallback;
+
         private event Action<string> OnSpeakerChangedCallback;
         private event Action OnExternalCallHangupCallback;
         private event Action OnExternalCallStartedCallback;
@@ -230,6 +220,9 @@ namespace live.videosdk
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnResumedAllStreamsDelegate(string kind);
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnAudioDeviceChangedDelegate(string availableDevice, string selectedDevice);
+
         // Bind the delegates to native functions
         [DllImport("__Internal")]
         private static extern void RegisterMeetingCallbacks(
@@ -244,7 +237,8 @@ namespace live.videosdk
             OnExternalCallRingingDelegate onCallRinging,
             OnExternalCallHangupDelegate onCallHangup,
             OnPausedAllStreamsDelegate OnPausedAllStreams,
-            OnResumedAllStreamsDelegate OnResumedAllStreams
+            OnResumedAllStreamsDelegate OnResumedAllStreams,
+            OnAudioDeviceChangedDelegate OnAudioDeviceChanged
         );
 
         [AOT.MonoPInvokeCallback(typeof(OnMeetingJoinedDelegate))]
@@ -315,6 +309,12 @@ namespace live.videosdk
         private static void OnResumedAllStreams(string kind)
         {
             Instance.OnResumedAllStreamsCallback?.Invoke(kind);
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(OnAudioDeviceChangedDelegate))]
+        private static void OnAudioDeviceChanged(string availableDevice, string selectedDevice)
+        {
+            Instance.OnAudioDeviceChangedCallback?.Invoke(availableDevice, selectedDevice);
         }
     }
 #endif

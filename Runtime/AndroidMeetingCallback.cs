@@ -92,17 +92,9 @@ namespace live.videosdk
             OnErrorCallback -= callback;
         }
 
-        public void SubscribeToAvailableAudioDevices(Action<string, string> callback) => OnAvailableAudioDevicesCallback += callback;
-        public void UnsubscribeFromAvailableAudioDevices(Action<string, string> callback) => OnAvailableAudioDevicesCallback -= callback;
         
         public void SubscribeToAudioDeviceChanged(Action<string, string> callback) => OnAudioDeviceChangedCallback += callback;
         public void UnsubscribeFromAudioDeviceChanged(Action<string, string> callback) => OnAudioDeviceChangedCallback -= callback;
-
-        public void SubscribeToAvailableVideoDevices(Action<string, string> callback) => OnAvailableVideoDevicesCallback += callback;
-        public void UnsubscribeFromAvailableVideoDevices(Action<string, string> callback) => OnAvailableVideoDevicesCallback -= callback;
-
-        public void SubscribeToVideoDeviceChanged(Action<string, string> callback) => OnVideoDeviceChangedCallback += callback;
-        public void UnsubscribeFromVideoDeviceChanged(Action<string, string> callback) => OnVideoDeviceChangedCallback -= callback;
 
 
         public void SubscribeToSpeakerChanged(Action<string> callback) => OnSpeakerChangedCallback += callback;
@@ -157,14 +149,6 @@ namespace live.videosdk
         private event Action<string> OnMeetingStateChangedCallback;
 
         private event Action<string, string> OnAudioDeviceChangedCallback;
-        private event Action<string, string> OnAvailableAudioDevicesCallback;
-
-
-        private event Action<string, string> OnVideoDeviceChangedCallback;
-        private event Action<string, string> OnAvailableVideoDevicesCallback;
-
-
-
 
         private event Action<string> OnSpeakerChangedCallback;
         private event Action OnExternalCallHangupCallback;
@@ -206,24 +190,6 @@ namespace live.videosdk
         {
             Debug.Log($"OnAudioDeviceChanged callback");
             OnAudioDeviceChangedCallback?.Invoke(availableDevice, selectedDevice);
-        }
-
-        private void OnAvailableAudioDevices(string availableDevices, string selectedDeviceJson)
-        {
-            Debug.Log($"OnAvailableAudioDevices callback");
-            OnAvailableAudioDevicesCallback?.Invoke(availableDevices, selectedDeviceJson);
-        }
-
-        private void OnVideoDeviceChanged(string availableDevice, string selectedDevice)
-        {
-            Debug.Log($"OnAudioDeviceChanged callback");
-            OnVideoDeviceChangedCallback?.Invoke(availableDevice, selectedDevice);
-        }
-
-        private void OnAvailableVideoDevices(string availableDevices, string selectedDeviceJson)
-        {
-            Debug.Log($"OnAvailableVideoDevices callback");
-            OnAvailableVideoDevicesCallback?.Invoke(availableDevices, selectedDeviceJson);
         }
 
         private void OnSelectedAudioDevice(string s)
