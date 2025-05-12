@@ -115,7 +115,7 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
         
         let customVideoTrack = webCamEnabled ? createCustomVideoTrack() : nil
         self.meeting = VideoSDK.initMeeting(
-            meetingId: "pbow-6vec-vahn",
+            meetingId: meetingId,
             participantId: participantId ?? "",
             participantName: participantName,
             micEnabled: micEnabled,
