@@ -25,7 +25,7 @@ namespace live.videosdk
         private string[] _avaliableAudioDevicesArray;
         private IMeetingActivity _meetingActivity;
         private IVideoSDKDTO _videoSdkDto;
-        private const string _packageVersion = "0.2.3";
+        private const string _packageVersion = "0.2.1";
         #region Callbacks For User
         public event Action<string> OnCreateMeetingIdCallback;
         public event Action<string> OnCreateMeetingIdFailedCallback;
@@ -37,7 +37,7 @@ namespace live.videosdk
         public event Action OnCallHangupCallback;
         public event Action OnCallStartedCallback;
         public event Action OnCallRingingCallback;
-        private event Action<string> OnJoinMeetingFailedCallback;
+        public event Action<string> OnJoinMeetingFailedCallback;
         private event Action<string, string[]> OnAudioDeviceChangedCallback;
         public event Action<StreamKind> OnPausedAllStreamsCallback;
         public event Action<StreamKind> OnResumedAllStreamsCallback;
@@ -124,12 +124,10 @@ namespace live.videosdk
         private void RegisterCallbacks()
         {
             RegisterMeetCallbacks();
-            OnJoinMeetingFailedCallback += OnMeetingJoinFailed;
         }
         private void UnRegisterCallbacks()
         {
             UnRegisterMeetCallbacks();
-            OnJoinMeetingFailedCallback -= OnMeetingJoinFailed;
         }
         private void RegisterMeetCallbacks()
         {
@@ -276,12 +274,6 @@ namespace live.videosdk
         {
             return _avaliableAudioDevicesArray;
         }
-
-        private void OnMeetingJoinFailed(string errorMessage)
-        {
-            throw new Exception(errorMessage);
-        }
-
 
         #region NativeCallBacks
         private void OnMeetingJoined(string meetingId, string Id, string name, bool isLocal, bool enabledLogs, string logEndPoint, string jwtKey, string peerId, string sessionId)
