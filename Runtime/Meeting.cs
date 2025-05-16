@@ -1,10 +1,7 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Android;
 using Newtonsoft.Json;
-using System.Runtime.InteropServices;
 using System.IO;
 using System.Collections.Concurrent;
 
@@ -22,7 +19,6 @@ namespace live.videosdk
         public string MeetingID { get; private set; }
         public static MeetingState MeetingState { get { return _meetState; } }
         private static MeetingState _meetState;
-        private string[] _avaliableAudioDevicesArray;
         private IMeetingActivity _meetingActivity;
         private IVideoSDKDTO _videoSdkDto;
         private const string _packageVersion = "0.2.3";
@@ -263,6 +259,8 @@ namespace live.videosdk
                 yield break;
 
             }
+            participantId = participantId == null ? Guid.NewGuid().ToString().Substring(0, 5) : participantId;
+
             _meetingActivity?.JoinMeeting(token, task.Result, name, micEnabled, camEnabled, participantId, _packageVersion, encorderConfig);
         }
 
@@ -274,7 +272,7 @@ namespace live.videosdk
         public AudioDeviceInfo[] GetAudioDevices()
         {
             string availableDevices = _meetingActivity?.GetAudioDevices();
-            Debug.Log("GetAudioDevices " + availableDevices);
+            //Debug.Log("GetAudioDevices " + availableDevices);
             // Deserialize directly from array JSON
             AudioDeviceInfo[] availableAudioDevice = JsonConvert.DeserializeObject<AudioDeviceInfo[]>(availableDevices);
             return availableAudioDevice;
@@ -283,7 +281,7 @@ namespace live.videosdk
         public VideoDeviceInfo[] GetVideoDevices()
         {
             string availableDevices = _meetingActivity?.GetVideoDevices();
-            Debug.Log("GetVideoDevices " + availableDevices);
+            //Debug.Log("GetVideoDevices " + availableDevices);
             //Deserialize directly from array JSON
             VideoDeviceInfo[] availableVideoDevice = JsonConvert.DeserializeObject<VideoDeviceInfo[]>(availableDevices);
 
@@ -293,16 +291,19 @@ namespace live.videosdk
         public AudioDeviceInfo GetSelectedAudioDevice()
         {
             string audioDevice = _meetingActivity?.GetSelectedAudioDevice();
-            Debug.Log("audio device " + audioDevice);
+            //Debug.Log("audio device " + audioDevice);
             AudioDeviceInfo selectedAudioDevice = JsonConvert.DeserializeObject<AudioDeviceInfo>(audioDevice);
             return selectedAudioDevice;
         }
 
+
+        public VideoDeviceInfo selectedVideoDevice = null;
         public VideoDeviceInfo GetSelectedVideoDevice()
         {
             string videoDevice = _meetingActivity?.GetSelectedVideoDevice();
-            Debug.Log("video device " + videoDevice);
+            //Debug.Log("video device " + videoDevice);
             VideoDeviceInfo selectedVideoDevice = JsonConvert.DeserializeObject<VideoDeviceInfo>(videoDevice);
+            this.selectedVideoDevice = selectedVideoDevice;
             return selectedVideoDevice;
         }
 
@@ -362,6 +363,7 @@ namespace live.videosdk
             {
                 return;
             }
+            Debug.Log($"PraticipantJoin:- Id: {Id} IsLocal: {isLocal} ParticipantName: {name}");
             _videoSdkDto.SendDTO("INFO", $"PraticipantJoin:- Id: {Id} IsLocal: {isLocal} ParticipantName: {name}");
             var participantData = new Participant(Id, name, isLocal);
             AddParticipant(Id, UserFactory.Create(participantData, MeetingControllFactory.Create(_videoSdkDto), _videoSdkDto));
@@ -434,8 +436,8 @@ namespace live.videosdk
         {
             RunOnUnityMainThread(() =>
             {
-                Debug.Log($"available devices {availableDevice}");
-                Debug.Log($"selectedDeviceJson {selectedDevice}");
+                //Debug.Log($"available devices {availableDevice}");
+                //Debug.Log($"selectedDeviceJson {selectedDevice}");
 
                 AudioDeviceInfo[] availableAudioDevice = JsonConvert.DeserializeObject<AudioDeviceInfo[]>(availableDevice);
                 AudioDeviceInfo selectedAudioDevice = JsonConvert.DeserializeObject<AudioDeviceInfo>(selectedDevice);
@@ -504,14 +506,13 @@ namespace live.videosdk
 
     public enum VideoEncoderConfig
     {
+        h90p_w160p,
         h144p_w176p,
         h240p_w320p,
+        h360p_w640p,
         h480p_w640p,
-        h480p_w720p,
         h720p_w960p,
-        h1080p_w1440p,
-        h720p_w1280p,
-        h360p_w640p
+        h720p_w1280p
     }
     public enum MeetingState
     {
@@ -565,12 +566,17 @@ namespace live.videosdk
         [JsonProperty]
         private string encoder;
 
-        public CustomVideoStream(VideoEncoderConfig videoEncoder, bool isMultiStream, VideoDeviceInfo videoDevice)
+        public CustomVideoStream(VideoEncoderConfig videoEncoder = VideoEncoderConfig.h240p_w320p, bool isMultiStream = false, VideoDeviceInfo videoDevice = null)
         {
+            if (videoDevice == null) videoDevice = Meeting.GetMeetingObject().selectedVideoDevice;
+
             this.videoEncoder = videoEncoder;
             this.isMultiStream = isMultiStream;
             this.videoDevice = videoDevice;
-            deviceId = this.videoDevice.deviceId;
+
+            if (this.videoDevice != null)
+                deviceId = this.videoDevice.deviceId;
+
             encoder = this.videoEncoder.ToString();
         }
     }

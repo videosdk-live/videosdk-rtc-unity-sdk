@@ -1,7 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.UI;
@@ -167,7 +164,7 @@ namespace live.videosdk
         {
             if (_rawImage != null)
             {
-                _rawImage.rectTransform.localScale = status? new Vector3(-1, 1, 1): new Vector3(1, 1, 1);
+                _rawImage.rectTransform.localScale = status ? new Vector3(-1, 1, 1) : new Vector3(1, 1, 1);
             }
             if (_renderer != null)
             {
@@ -229,11 +226,14 @@ namespace live.videosdk
         private void UnRegisterVideoFrameCallbacks()
         {
             _participant.OnVideoFrameReceivedCallback -= OnVideoFrameReceived;
+            _participant.OnTexureSizeChangedCallback -= OnTexureSizeChanged;
 
         }
         private void RegisterVideoFrameCallbacks()
         {
             _participant.OnVideoFrameReceivedCallback += OnVideoFrameReceived;
+            _participant.OnTexureSizeChangedCallback += OnTexureSizeChanged;
+
         }
 
         private void OnParticipantLeft()
@@ -274,6 +274,12 @@ namespace live.videosdk
                 _videoTexture.LoadImage(videoStream);
                 SetTexture(_videoTexture);
             }
+        }
+
+        private void OnTexureSizeChanged(int height, int width)
+        {
+            Debug.Log($"OnTexureSizeChanged {height}  {width}");
+            _videoTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
         }
 
         public void SetVideo(bool status, CustomVideoStream customVideoStream = null)

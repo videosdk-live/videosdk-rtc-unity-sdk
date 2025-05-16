@@ -18,6 +18,8 @@ namespace live.videosdk
         public event Action OnParticipantLeftCallback;
         public event Action<StreamKind> OnStreamPausedCallaback;
         public event Action<StreamKind> OnStreamResumedCallaback;
+        public event Action<int, int> OnTexureSizeChangedCallback;
+
         private IMeetingControlls _meetControlls;
         private IVideoSDKDTO _videoSdkDto;
         public IOSUser(IParticipant participantData, IMeetingControlls meetControlls,IVideoSDKDTO videoSDK)

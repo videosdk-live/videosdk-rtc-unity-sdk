@@ -99,7 +99,7 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
         setupAudioRouteMonitoring()
         
         self.portName = self.audioSession.currentRoute.inputs.first?.portName ?? "Speaker"
-        self.currentAudioDevice = AudioDeviceInfo(label: portName, kind: "audio", deviceID: portName)
+        self.currentAudioDevice = AudioDeviceInfo(label: portName, kind: "audio", deviceId: portName)
         self.currentVideoDevice = facingMode.deviceInfo
     }
     
@@ -125,15 +125,15 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
                                   sdkName: String? = nil,
                                   sdkVersion: String? = nil,
                                   encoderConfig: String? = nil) {
-        var (encoderEnum, multi) = (self.encoderConfig, self.multiStream)
+        var (encoderEnum, multi, facing) = (self.encoderConfig, self.multiStream, self.facingMode.facing)
         if let encoderConfig = encoderConfig {
-             (encoderEnum, multi) = extractEncoderConfig(from: encoderConfig)
+            (encoderEnum, multi, facing) = extractEncoderConfig(from: encoderConfig)
              self.encoderConfig = encoderEnum
              self.multiStream = multi
         }
         VideoSDK.config(token: token)
         
-        let customVideoTrack = webCamEnabled ? createCustomVideoTrack(encoder: encoderEnum, multiStream: multi) : nil
+        let customVideoTrack = webCamEnabled ? createCustomVideoTrack(facing: facing, encoder: encoderEnum, multiStream: multi) : nil
         self.meeting = VideoSDK.initMeeting(
             meetingId: meetingId,
             participantId: participantId ?? "",
@@ -146,7 +146,7 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
         self.webCamEnabled = webCamEnabled
         self.micEnabled = micEnabled
         self.currentVideoDevice = webCamEnabled ? facingMode.deviceInfo : nil
-        self.currentAudioDevice = micEnabled ? AudioDeviceInfo(label: portName, kind: "audio", deviceID: portName) : nil
+        self.currentAudioDevice = micEnabled ? AudioDeviceInfo(label: portName, kind: "audio", deviceId: portName) : nil
         
         guard let meeting = meeting else {
             // error callback
@@ -170,36 +170,31 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
     @objc public func toggleWebCam(status: Bool, encoderConfig: String? = nil) {
         guard let meeting = meeting,
               status != webCamEnabled,
-              meetingState == .CONNECTED else { return }
-        
+              meetingState == .CONNECTED
+        else { return }
         if status {
-            var (encoderEnum, multi) = (self.encoderConfig, self.multiStream)
+            meeting.disableWebcam()
+            var (encoderEnum, multi, facing) = (self.encoderConfig, self.multiStream, self.facingMode.facing)
             if let encoderConfig = encoderConfig {
-                (encoderEnum, multi) = extractEncoderConfig(from: encoderConfig)
-                self.encoderConfig = encoderEnum
-                self.multiStream = multi
+                 (encoderEnum, multi, facing) = extractEncoderConfig(from: encoderConfig)
+                 self.encoderConfig = encoderEnum
+                 self.multiStream = multi
             }
-            
-            // Check if preview output buffers are enabled
-            if let videoDataOutput = captureSession?.outputs.first(where: { $0 is AVCaptureVideoDataOutput }) as? AVCaptureVideoDataOutput {
-                // Temporarily disable preview-sized output buffers if necessary
-                videoDataOutput.deliversPreviewSizedOutputBuffers = false
-                
-                let customTrack = createCustomVideoTrack(encoder: encoderEnum, multiStream: multi)
-                meeting.enableWebcam(customVideoStream: customTrack)
-                webCamEnabled = true
-                self.currentVideoDevice = facingMode.deviceInfo
-                
-                // Re-enable preview-sized output buffers after enabling the webcam
-                videoDataOutput.deliversPreviewSizedOutputBuffers = true
-            }
+            let customTrack  = createCustomVideoTrack(
+                facing: facing,
+                encoder: encoderEnum,
+                multiStream: multi
+            )
+//            let customTrack = try? VideoSDK.createCameraVideoTrack(encoderConfig: .h90p_w160p, facingMode: .back, multiStream: true)
+            meeting.enableWebcam(customVideoStream: customTrack)
+            webCamEnabled = true
+            self.currentVideoDevice = facingMode.deviceInfo
         } else {
             meeting.disableWebcam()
             webCamEnabled = false
             self.currentVideoDevice = nil
         }
     }
-
     
     @objc public func toggleMic(status: Bool) {
         guard let meeting = meeting,
@@ -211,7 +206,7 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
         if status {
             meeting.unmuteMic()
             self.micEnabled = true
-            self.currentAudioDevice = AudioDeviceInfo(label: portName, kind: "audio", deviceID: portName)
+            self.currentAudioDevice = AudioDeviceInfo(label: portName, kind: "audio", deviceId: portName)
         } else {
             meeting.muteMic()
             self.micEnabled = false
@@ -299,7 +294,7 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
     @objc public func getAudioDevices() -> String {
         let audioDevices = getMics()
         let devicesArray = audioDevices.map { name, type in
-            return AudioDeviceInfo(label: name, kind: "audio", deviceID: name)
+            return AudioDeviceInfo(label: name, kind: "audio", deviceId: name)
         }
         return devicesArray.toJsonString(prettyPrint: true)
     }
@@ -310,8 +305,9 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
     
     @objc public func changeAudioDevice(_ device: String) {
         guard let meeting = meeting else {
-            let device = self.changeMic(selectedDevice: device)
-            self.currentAudioDevice = AudioDeviceInfo(label: device, kind: "audio", deviceID: device)
+//            let device = self.changeMic(selectedDevice: device)
+            self.selectedAudioDevice = device
+            self.currentAudioDevice = AudioDeviceInfo(label: device, kind: "audio", deviceId: device)
             if let devicePtr = (currentAudioDevice.toJsonString(prettyPrint: true) as NSString).utf8String,
                let listPtr = (getAudioDevices() as NSString).utf8String {
                 OnAudioDeviceChanged(listPtr, devicePtr)
@@ -323,9 +319,14 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
     }
     
     @objc public func changeVideoDevice(_ device: String) {
-        guard currentVideoDevice?.deviceID != device else {
+        guard currentVideoDevice?.deviceId != device else {
                 return
-            }
+        }
+        guard meeting != nil else {
+            facingMode.toggle()
+            self.currentVideoDevice = facingMode.deviceInfo
+            return
+        }
             meeting?.switchWebcam()
             facingMode.toggle()
             currentVideoDevice = facingMode.deviceInfo
@@ -352,7 +353,7 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
             let mode = name.lowercased().contains("back") ? "back" : "front"
             return VideoDeviceInfo(label: name,
                                    kind: "video",
-                                   deviceID: name,
+                                   deviceId: name,
                                    facingMode: mode)
         }
         return devicesArray.toJsonString(prettyPrint: true)
@@ -481,7 +482,7 @@ extension VideoSDKHelper: MeetingEventListener {
     }
     
     public func onMicChanged(selectedDevice: String) {
-        self.currentAudioDevice = AudioDeviceInfo(label: selectedDevice, kind: "audio", deviceID: selectedDevice)
+        self.currentAudioDevice = AudioDeviceInfo(label: selectedDevice, kind: "audio", deviceId: selectedDevice)
         if let devicePtr = (currentAudioDevice.toJsonString(prettyPrint: true) as NSString).utf8String,
            let listPtr = (getAudioDevices() as NSString).utf8String {
             OnAudioDeviceChanged(listPtr, devicePtr)
@@ -500,7 +501,7 @@ extension VideoSDKHelper: MeetingEventListener {
                let currentRoute = AVAudioSession.sharedInstance().currentRoute
                let currentDevice = currentRoute.inputs.first?.portName ?? ""
     //           let deviceList = VideoSDK.getAudioDevices()
-               let currentDeviceInfo = AudioDeviceInfo(label: currentDevice, kind: "audio", deviceID: currentDevice)
+               let currentDeviceInfo = AudioDeviceInfo(label: currentDevice, kind: "audio", deviceId: currentDevice)
                self.currentAudioDevice = currentDeviceInfo
                let deviceList = self.getAudioDevices()
     
@@ -750,13 +751,14 @@ extension VideoSDKHelper: ParticipantEventListener {
 //    }
     
     func createCustomVideoTrack(
+        facing: AVCaptureDevice.Position = .front,
         encoder: CustomVideoTrackConfig,
         multiStream: Bool
     ) -> CustomRTCMediaStream? {
         do {
-            return try VideoSDK.createCameraVideoTrack(
+            return try? VideoSDK.createCameraVideoTrack(
                 encoderConfig: encoder,
-                facingMode:    .front,
+                facingMode:    facing,
                 multiStream:   multiStream
             )
         } catch {
@@ -791,7 +793,6 @@ extension VideoSDKHelper {
         
         var devices: [(String, String)] = [("Speaker", "Speaker")]
         for input in audioSession.availableInputs! {
-            print(input.portName, input.portType)
             let deviceName: String = input.portName
             let deviceType: String =  (deviceName == "iPhone Microphone") ? "Receiver" : input.portType.rawValue
             let device = (deviceName,deviceType)
@@ -912,21 +913,31 @@ extension VideoSDKHelper {
     }
     
     private func extractEncoderConfig(from json: String)
-    -> (encoder: CustomVideoTrackConfig, multiStream: Bool)
+    -> (encoder: CustomVideoTrackConfig, multiStream: Bool, facing: AVCaptureDevice.Position)
     {
         var videoEnum: CustomVideoTrackConfig = .h240p_w320p
         var multiStream = true
+        var facing = AVCaptureDevice.Position.front
         
         guard
             let data = json.data(using: .utf8),
             let obj  = try? JSONSerialization.jsonObject(with: data),
             let dict = obj as? [String:Any]
         else {
-            return (videoEnum, multiStream)
+            return (videoEnum, multiStream, facing)
         }
         
         let rawEncoder    = dict["encoder"]       as? String ?? ""
         multiStream       = dict["isMultiStream"] as? Bool   ?? true
+        let facingMode = dict["deviceId"] as? String ?? ""
+        switch facingMode {
+            case "Front Camera":
+                facing = .front
+            case "Back Camera":
+                facing = .back
+            default:
+                facing = .front
+        }
         
         switch rawEncoder {
         case "h240p_w320p":
@@ -941,7 +952,7 @@ extension VideoSDKHelper {
             videoEnum = .h240p_w320p
         }
         
-        return (videoEnum, multiStream)
+        return (videoEnum, multiStream, facing)
     }
 }
 
@@ -971,19 +982,26 @@ extension Dictionary {
 public struct AudioDeviceInfo: Codable {
     var label: String
     var kind: String
-    var deviceID: String
+    var deviceId: String
 }
 
 public struct VideoDeviceInfo: Codable {
     var label: String
     var kind: String
-    var deviceID: String
+    var deviceId: String
     var facingMode: String
 }
 
 enum CameraFacingMode: String {
     case front
     case back
+    
+    var facing: AVCaptureDevice.Position {
+        switch self {
+        case .front: return .front
+        case .back: return .back
+        }
+    }
 
     mutating func toggle() {
         self = (self == .front) ? .back : .front
@@ -1000,7 +1018,7 @@ enum CameraFacingMode: String {
         VideoDeviceInfo(
             label: displayName,
             kind:  "video",
-            deviceID:   displayName,
+            deviceId:   displayName,
             facingMode: rawValue
         )
     }

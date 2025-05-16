@@ -11,6 +11,7 @@ namespace live.videosdk
         bool CamEnabled { get; }
 
         event Action<byte[]> OnVideoFrameReceivedCallback;
+        event Action<int, int> OnTexureSizeChangedCallback;
         event Action<StreamKind> OnStreamEnabledCallaback;
         event Action<StreamKind> OnStreamDisabledCallaback;
         event Action OnParticipantLeftCallback;

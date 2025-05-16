@@ -116,7 +116,7 @@ namespace live.videosdk
                                                                             encorderConfig);
 
 
-                Debug.Log($"join config {JsonConvert.SerializeObject(joinMeetingConfig)}");
+                //Debug.Log($"join config {JsonConvert.SerializeObject(joinMeetingConfig)}");
                 //_pluginClass.CallStatic("joinMeeting", _currentActivity, token, meetingId, name, micEnable, camEnable, participantId, packageVersion, platform);
                 _pluginClass.CallStatic("joinMeeting", _currentActivity, JsonConvert.SerializeObject(joinMeetingConfig));
                 _videoSdkDto.SendDTO("INFO", $"JoinMeeting:- MeetingId:{meetingId}");
@@ -158,14 +158,14 @@ namespace live.videosdk
 
         public void ChangeAudioDevice(string deviceLabel)
         {
-            Debug.Log($"ChangeAudioDevice SendDTO {deviceLabel}");
+            //Debug.Log($"ChangeAudioDevice SendDTO {deviceLabel}");
             _pluginClass.CallStatic("changeAudioDevice", deviceLabel);
             _videoSdkDto.SendDTO("INFO", $"ChangeAudioDevice");
         }
 
         public void ChangeVideoDevice(string deviceLabel)
         {
-            Debug.Log($"ChangeVideoDevice SendDTO {deviceLabel}");
+            //Debug.Log($"ChangeVideoDevice SendDTO {deviceLabel}");
             _pluginClass.CallStatic("changeVideoDevice", deviceLabel);
             _videoSdkDto.SendDTO("INFO", $"ChangeVideoDevice");
         }

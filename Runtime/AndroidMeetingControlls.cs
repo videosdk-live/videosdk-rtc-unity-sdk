@@ -22,13 +22,12 @@ namespace live.videosdk
         }
         public void ToggleWebCam(bool status, string Id, string customVideoStream = null)
         {
-            Debug.Log("ToggleWebCam => " + customVideoStream);
             _pluginClass.CallStatic("toggleWebCam", status, customVideoStream,_applicationContext);
             _videoSdkDto.SendDTO("INFO", $"ToggleWebCam:- status:{status} ParticipantId:{Id}");
         }
         public void ToggleMic(bool status, string Id)
         {
-            _pluginClass.CallStatic("toggleMic", status, _applicationContext);
+            _pluginClass.CallStatic("toggleMic", status);
             _videoSdkDto.SendDTO("INFO", $"ToggleMic:- status:{status} ParticipantId:{Id}");
         }
 

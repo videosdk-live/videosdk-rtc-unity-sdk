@@ -16,6 +16,9 @@ namespace live.videosdk
         public bool CamEnabled { get; private set; }
 
         public event Action<byte[]> OnVideoFrameReceivedCallback;
+
+        public event Action<int, int> OnTexureSizeChangedCallback;
+
         public event Action<StreamKind> OnStreamEnabledCallaback;
         public event Action<StreamKind> OnStreamDisabledCallaback;
         public event Action OnParticipantLeftCallback;
@@ -33,7 +36,9 @@ namespace live.videosdk
         public delegate void FrameReceivedCallback(
             [MarshalAs(UnmanagedType.LPStr)] string participantId,
             IntPtr frameData,
-            int frameDataSize);
+            int frameDataSize,
+            int height,
+            int width);
 
         private static FrameReceivedCallback frameCallback;
 
@@ -47,7 +52,7 @@ namespace live.videosdk
                 _meetControlls = meetControlls;
                 _videoSdkDto = videoSDK;
                 RegiesterCallBack();
-                Debug.Log($"Androiduser || {ParticipantId} ");
+                //Debug.Log($"Androiduser || {ParticipantId} ");
                 _instances[ParticipantId] = this;
             }
 
@@ -59,7 +64,7 @@ namespace live.videosdk
             {
                 pluginClass.CallStatic("registerParticipantCallback", ParticipantId, this);
             }
-            Debug.Log($"RegiesterCallBack {frameCallback == null}");
+            //Debug.Log($"RegiesterCallBack {frameCallback == null}");
             if (frameCallback == null)
             {
                 // Create the callback delegate
@@ -84,7 +89,7 @@ namespace live.videosdk
 
         public override void OnStreamEnabled(string kind)
         {
-            Debug.Log($"OnStreamEnabled override {kind}");
+            //Debug.Log($"StreamEnabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
             _videoSdkDto.SendDTO("INFO", $"StreamEnabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
             if (kind.ToLower().Equals("video"))
             {
@@ -105,7 +110,7 @@ namespace live.videosdk
 
         public override void OnStreamDisabled(string kind)
         {
-            Debug.Log($"OnStreamEnabled disable {kind}");
+            //Debug.Log($"StreamDisabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
             _videoSdkDto.SendDTO("INFO", $"StreamDisabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName} ");
             if (kind.ToLower().Equals("video"))
             {
@@ -168,24 +173,28 @@ namespace live.videosdk
 
         //}
 
+
+        public byte[] managedArray;
+
         //Native callback method
-       [AOT.MonoPInvokeCallback(typeof(FrameReceivedCallback))]
-        private static void OnFrameReceivedNative(string participantId, IntPtr frameData, int frameDataSize)
+        [AOT.MonoPInvokeCallback(typeof(FrameReceivedCallback))]
+        private static void OnFrameReceivedNative(string participantId, IntPtr frameData, int frameDataSize, int height, int width)
         {
             try
             {
                 if (!_instances.TryGetValue(participantId, out var instance) || instance.OnVideoFrameReceivedCallback == null)
                     return;
                 // Convert the native pointer to a byte array
-                byte[] managedArray = new byte[frameDataSize];
-                Marshal.Copy(frameData, managedArray, 0, frameDataSize);
+                instance.managedArray = new byte[frameDataSize];
+                Marshal.Copy(frameData, instance.managedArray, 0, frameDataSize);
 
                 // Invoke the event on the main thread
                 if (instance.OnVideoFrameReceivedCallback != null)
                 {
                     MainThreadDispatcher.Instance.Enqueue(() =>
                     {
-                        instance.OnVideoFrameReceivedCallback.Invoke(managedArray);
+                        instance.OnVideoFrameReceivedCallback.Invoke(instance.managedArray);
+                        instance.GetTextureSize(instance, height, width);
                     });
                 }
 
@@ -197,6 +206,20 @@ namespace live.videosdk
             }
         }
 
+
+
+        public int lastHeight, lastWidth;
+
+        private void GetTextureSize(AndroidUser androidUser, int currentHeight, int currentWidth)
+        {
+            if (androidUser.lastHeight != currentHeight || androidUser.lastWidth != currentWidth)
+            {
+                androidUser.lastHeight = currentHeight;
+                androidUser.lastWidth = currentWidth;
+
+                androidUser.OnTexureSizeChangedCallback.Invoke(currentHeight, currentWidth);
+            }
+        }
 
         public override void OnVideoFrameReceived(string videoStream)
         {
@@ -226,7 +249,7 @@ namespace live.videosdk
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.ToggleWebCam(status, ParticipantId,customVideoStream);
+            _meetControlls.ToggleWebCam(status, ParticipantId, customVideoStream);
         }
         public void ToggleMic(bool status)
         {

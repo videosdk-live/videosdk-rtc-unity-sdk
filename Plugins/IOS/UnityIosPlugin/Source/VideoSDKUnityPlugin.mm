@@ -123,6 +123,7 @@ const char* getVideoDevices() {
 
 const char* getSelectedAudioDevice() {
     @autoreleasepool {
+        NSLog(@"called");
         NSString *json = [[VideoSDKHelper shared] getSelectedAudioDevice];
         return strdup([json UTF8String]);
     }

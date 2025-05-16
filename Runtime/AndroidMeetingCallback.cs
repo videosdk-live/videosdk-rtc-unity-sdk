@@ -188,13 +188,13 @@ namespace live.videosdk
 
         private void OnAudioDeviceChanged(string availableDevice, string selectedDevice)
         {
-            Debug.Log($"OnAudioDeviceChanged callback");
+            //Debug.Log($"OnAudioDeviceChanged callback");
             OnAudioDeviceChangedCallback?.Invoke(availableDevice, selectedDevice);
         }
 
         private void OnSelectedAudioDevice(string s)
         {
-            Debug.Log($"OnSelectedAudioDevice {s}");
+            //Debug.Log($"OnSelectedAudioDevice {s}");
         }
 
         private void OnSpeakerChanged(string participantId)
