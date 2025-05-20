@@ -24,10 +24,14 @@ namespace live.videosdk
             devices = WebCamTexture.devices;
             OnSetCameraDeviceSet += SetCameraDevice;
             OnStreamEnableOrDisable += StreamEnableOrDisable;
+
+            SetCameraDevice(Meeting.GetMeetingObject().selectedVideoDevice);
         }
 
         private void SetCameraDevice(VideoDeviceInfo selectedVideoDevice)
         {
+            Debug.Log($"SetCameraDevice {gameObject.activeInHierarchy}");
+
             if (!gameObject.activeInHierarchy) return;
             //Debug.Log($"SetCameraDevice");
             if (webcamTexture != null)

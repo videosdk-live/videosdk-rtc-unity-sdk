@@ -107,6 +107,8 @@ namespace live.videosdk
             _ = MainThreadDispatcher.Instance;
 #pragma warning restore CS0162 // Unreachable code detected
             InitializeDependecy();
+
+            SetVideoDevice();
         }
 
         private void InitializeDependecy()
@@ -269,10 +271,26 @@ namespace live.videosdk
             _meetingActivity?.LeaveMeeting();
         }
 
+
+        private void SetVideoDevice()
+        {
+            VideoDeviceInfo[] availableVideoDevice = GetVideoDevices();
+
+            for (int i = 0; i < availableVideoDevice.Length; i++)
+            {
+                if (availableVideoDevice[i].facingMode == FacingMode.front)
+                {
+                    ChangeVideoDevice(availableVideoDevice[i]);
+                    Invoke(nameof(GetSelectedVideoDevice), 0.1f);
+                    break;
+                }
+            }
+        }
+
         public AudioDeviceInfo[] GetAudioDevices()
         {
             string availableDevices = _meetingActivity?.GetAudioDevices();
-            //Debug.Log("GetAudioDevices " + availableDevices);
+            Debug.Log("GetAudioDevices " + availableDevices);
             // Deserialize directly from array JSON
             AudioDeviceInfo[] availableAudioDevice = JsonConvert.DeserializeObject<AudioDeviceInfo[]>(availableDevices);
             return availableAudioDevice;
@@ -314,7 +332,9 @@ namespace live.videosdk
 
         public void ChangeVideoDevice(VideoDeviceInfo videoDevice)
         {
+            this.selectedVideoDevice = videoDevice;
             _meetingActivity?.ChangeVideoDevice(videoDevice.label);
+            PreMeetingController.OnSetCameraDeviceSet?.Invoke(this.selectedVideoDevice);
         }
         public void PauseAllStreams(StreamKind kind)
         {
@@ -437,7 +457,7 @@ namespace live.videosdk
             RunOnUnityMainThread(() =>
             {
                 //Debug.Log($"available devices {availableDevice}");
-                //Debug.Log($"selectedDeviceJson {selectedDevice}");
+                Debug.Log($"selectedDeviceJson {selectedDevice}");
 
                 AudioDeviceInfo[] availableAudioDevice = JsonConvert.DeserializeObject<AudioDeviceInfo[]>(availableDevice);
                 AudioDeviceInfo selectedAudioDevice = JsonConvert.DeserializeObject<AudioDeviceInfo>(selectedDevice);
