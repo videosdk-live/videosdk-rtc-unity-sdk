@@ -18,6 +18,8 @@ namespace live.videosdk
 
         public static Action<bool> OnStreamEnableOrDisable;
 
+        private Meeting meeting;
+
         private void Awake()
         {
             rawImage = GetComponent<RawImage>();
@@ -25,7 +27,9 @@ namespace live.videosdk
             OnSetCameraDeviceSet += SetCameraDevice;
             OnStreamEnableOrDisable += StreamEnableOrDisable;
 
-            SetCameraDevice(Meeting.GetMeetingObject().selectedVideoDevice);
+            meeting = Meeting.GetMeetingObject();
+
+            SetCameraDevice(meeting.GetSelectedVideoDevice());
         }
 
         private void SetCameraDevice(VideoDeviceInfo selectedVideoDevice)

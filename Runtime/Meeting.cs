@@ -107,8 +107,6 @@ namespace live.videosdk
             _ = MainThreadDispatcher.Instance;
 #pragma warning restore CS0162 // Unreachable code detected
             InitializeDependecy();
-
-            SetVideoDevice();
         }
 
         private void InitializeDependecy()
@@ -272,21 +270,6 @@ namespace live.videosdk
         }
 
 
-        private void SetVideoDevice()
-        {
-            VideoDeviceInfo[] availableVideoDevice = GetVideoDevices();
-
-            for (int i = 0; i < availableVideoDevice.Length; i++)
-            {
-                if (availableVideoDevice[i].facingMode == FacingMode.front)
-                {
-                    ChangeVideoDevice(availableVideoDevice[i]);
-                    Invoke(nameof(GetSelectedVideoDevice), 0.1f);
-                    break;
-                }
-            }
-        }
-
         public AudioDeviceInfo[] GetAudioDevices()
         {
             string availableDevices = _meetingActivity?.GetAudioDevices();
@@ -315,14 +298,32 @@ namespace live.videosdk
         }
 
 
-        public VideoDeviceInfo selectedVideoDevice = null;
+        [HideInInspector] public VideoDeviceInfo selectedVideoDevice = null;
         public VideoDeviceInfo GetSelectedVideoDevice()
         {
-            string videoDevice = _meetingActivity?.GetSelectedVideoDevice();
-            //Debug.Log("video device " + videoDevice);
-            VideoDeviceInfo selectedVideoDevice = JsonConvert.DeserializeObject<VideoDeviceInfo>(videoDevice);
-            this.selectedVideoDevice = selectedVideoDevice;
-            return selectedVideoDevice;
+
+            if (selectedVideoDevice == null)
+            {
+                VideoDeviceInfo[] availableVideoDevice = GetVideoDevices();
+
+                for (int i = 0; i < availableVideoDevice.Length; i++)
+                {
+                    if (availableVideoDevice[i].facingMode == FacingMode.front)
+                    {
+                        ChangeVideoDevice(availableVideoDevice[i]);
+                        return selectedVideoDevice = availableVideoDevice[i];
+                    }
+                }
+            }
+            else
+            {
+                string videoDevice = _meetingActivity?.GetSelectedVideoDevice();
+                VideoDeviceInfo selectedVideoDevice = JsonConvert.DeserializeObject<VideoDeviceInfo>(videoDevice);
+                this.selectedVideoDevice = selectedVideoDevice;
+                return selectedVideoDevice;
+            }
+
+            return null;
         }
 
         public void ChangeAudioDevice(AudioDeviceInfo audioDevice)
@@ -332,9 +333,9 @@ namespace live.videosdk
 
         public void ChangeVideoDevice(VideoDeviceInfo videoDevice)
         {
-            this.selectedVideoDevice = videoDevice;
+            selectedVideoDevice = videoDevice;
             _meetingActivity?.ChangeVideoDevice(videoDevice.label);
-            PreMeetingController.OnSetCameraDeviceSet?.Invoke(this.selectedVideoDevice);
+            PreMeetingController.OnSetCameraDeviceSet?.Invoke(selectedVideoDevice);
         }
         public void PauseAllStreams(StreamKind kind)
         {
@@ -369,6 +370,12 @@ namespace live.videosdk
             RunOnUnityMainThread(() =>
             {
                 OnParticipantLeftCallback?.Invoke(new Participant(Id, name, isLocal));
+
+                if (isLocal)
+                {
+                    PreMeetingController.OnSetCameraDeviceSet?.Invoke(selectedVideoDevice);
+                }
+
                 foreach (var user in _participantsDict.Values)
                 {
                     user?.OnParticipantLeft();
@@ -399,6 +406,11 @@ namespace live.videosdk
             RunOnUnityMainThread(() =>
             {
                 OnParticipantLeftCallback?.Invoke(new Participant(Id, name, isLocal));
+
+                if (isLocal)
+                {
+                    PreMeetingController.OnSetCameraDeviceSet?.Invoke(selectedVideoDevice);
+                }
 
                 if (_participantsDict.TryGetValue(Id, out IUser participant))
                 {
