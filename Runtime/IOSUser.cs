@@ -4,7 +4,7 @@ using UnityEngine;
 namespace live.videosdk
 {
 #if UNITY_IOS
-    internal class IOSUser :IUser
+    internal class IOSUser : IUser
     {
         public bool IsLocal { get; }
         public string ParticipantId { get; }
@@ -22,7 +22,7 @@ namespace live.videosdk
 
         private IMeetingControlls _meetControlls;
         private IVideoSDKDTO _videoSdkDto;
-        public IOSUser(IParticipant participantData, IMeetingControlls meetControlls,IVideoSDKDTO videoSDK)
+        public IOSUser(IParticipant participantData, IMeetingControlls meetControlls, IVideoSDKDTO videoSDK)
         {
             if (participantData != null)
             {
@@ -49,9 +49,9 @@ namespace live.videosdk
         {
             IOSParticipantCallback.Instance.UnsubscribeFromStreamEnabled(OnStreamEnable);
             IOSParticipantCallback.Instance.UnsubscribeFromStreamDisabled(OnStreamDisable);
-            IOSParticipantCallback.Instance.UnsubscribeFromFrameReceived(OnVideoFrameReceive);        
-            IOSParticipantCallback.Instance.UnsubscribeFromPauseStream(OnStreamPaused);        
-            IOSParticipantCallback.Instance.UnsubscribeFromResumeStream(OnStreamResumed);        
+            IOSParticipantCallback.Instance.UnsubscribeFromFrameReceived(OnVideoFrameReceive);
+            IOSParticipantCallback.Instance.UnsubscribeFromPauseStream(OnStreamPaused);
+            IOSParticipantCallback.Instance.UnsubscribeFromResumeStream(OnStreamResumed);
         }
 
         public void OnParticipantLeft()
@@ -61,7 +61,7 @@ namespace live.videosdk
             UnRegisterCallBacks();
         }
 
-        private void OnStreamEnable(string id,string kind)
+        private void OnStreamEnable(string id, string kind)
         {
             if (!id.Equals(ParticipantId)) return;
             _videoSdkDto.SendDTO("INFO", $"StreamEnabled:- Kind: {kind} Id: {id} ParticipantName: {ParticipantName}");
@@ -142,7 +142,7 @@ namespace live.videosdk
         private void OnStreamPaused(string id, string kind)
         {
             if (!id.Equals(ParticipantId)) return;
-             _videoSdkDto.SendDTO("INFO", $"StreamPaused:- Kind: {kind} Id: {id} ParticipantName: {ParticipantName}");
+            _videoSdkDto.SendDTO("INFO", $"StreamPaused:- Kind: {kind} Id: {id} ParticipantName: {ParticipantName}");
             RunOnUnityMainThread(() =>
             {
                 if (Enum.TryParse(kind, true, out StreamKind streamKind))
@@ -161,7 +161,7 @@ namespace live.videosdk
             }
         }
 
-    #region CallToNative
+        #region CallToNative
         public void ToggleWebCam(bool status, string customVideoStream)
         {
             if (_meetControlls == null)
@@ -169,7 +169,7 @@ namespace live.videosdk
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.ToggleWebCam(status, ParticipantId, customVideoStream);
+            _meetControlls.ToggleWebCam(IsLocal, status, ParticipantId, customVideoStream);
         }
         public void ToggleMic(bool status)
         {
@@ -178,8 +178,19 @@ namespace live.videosdk
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.ToggleMic(status, ParticipantId);
+            _meetControlls.ToggleMic(IsLocal, status, ParticipantId);
         }
+
+        public void Leave()
+        {
+            if (_meetControlls == null)
+            {
+                Debug.LogError("It seems you don't have active meet instance, please join meet first");
+                return;
+            }
+            _meetControlls.Leave(ParticipantId);
+        }
+
         public void PauseStream(StreamKind kind)
         {
             if (_meetControlls == null)

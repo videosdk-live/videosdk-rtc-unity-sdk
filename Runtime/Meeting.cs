@@ -37,6 +37,10 @@ namespace live.videosdk
         public event Action<StreamKind> OnPausedAllStreamsCallback;
         public event Action<StreamKind> OnResumedAllStreamsCallback;
 
+        public event Action<string> OnWebcamRequestedCallback;
+
+        public event Action<string> OnMicRequestedCallback;
+
 
         //public event Action<string, string> OnAvailableAudioDevicesCallback;
         public event Action<AudioDeviceInfo[], AudioDeviceInfo> OnAudioDeviceChangedCallback;
@@ -152,6 +156,8 @@ namespace live.videosdk
             _meetingActivity.SubscribeToExternalCallHangup(OnExternalCallHangup);
             _meetingActivity.SubscribeToPausedAllStreams(OnPausedAllStreams);
             _meetingActivity.SubscribeToResumedAllStreams(OnResumedAllStreams);
+            _meetingActivity.SubscribeToWebcamRequested(OnWebcamRequested);
+            _meetingActivity.SubscribeToMicRequested(OnMicRequested);
         }
 
         private void UnRegisterMeetCallbacks()
@@ -175,10 +181,12 @@ namespace live.videosdk
             _meetingActivity.UnsubscribeFromExternalCallHangup(OnExternalCallHangup);
             _meetingActivity.UnsubscribeFromPausedAllStreams(OnPausedAllStreams);
             _meetingActivity.UnsubscribeFromResumedAllStreams(OnResumedAllStreams);
+            _meetingActivity.UnsubscribeFromWebcamRequested(OnWebcamRequested);
+            _meetingActivity.UnsubscribeFromMicRequested(OnMicRequested);
         }
         #endregion
 
-        private void RunOnUnityMainThread(Action action)
+        public static void RunOnUnityMainThread(Action action)
         {
             if (action != null)
             {
@@ -227,6 +235,9 @@ namespace live.videosdk
 
         public void Join(string token, string meetingId, string name, bool micEnabled, bool camEnabled, CustomVideoStream encorderConfig = null, string participantId = null)
         {
+
+            meetingId = "123456789";
+
             if (string.IsNullOrEmpty(meetingId))
             {
                 Debug.LogError("Invalid Join Meeting Arguments Meet-Id can't be null or empty");
@@ -534,6 +545,36 @@ namespace live.videosdk
             return null;
         }
 
+        #region Remote Access
+        Action accept = null;
+        Action reject = null;
+        private void OnWebcamRequested(string participantId, Action accept, Action reject)
+        {
+            RunOnUnityMainThread(() =>
+            {
+                this.accept = accept;
+                this.reject = reject;
+                OnWebcamRequestedCallback?.Invoke(participantId);
+            });
+        }
+
+        private void OnMicRequested(string participantId, Action accept, Action reject)
+        {
+            RunOnUnityMainThread(() =>
+            {
+                this.accept = accept;
+                this.reject = reject;
+                OnMicRequestedCallback?.Invoke(participantId);
+            });
+        }
+
+        public void Request(bool isAccept)
+        {
+            Action action = isAccept ? accept : reject;
+            action?.Invoke();
+        }
+
+        #endregion
     }
 
     public enum VideoEncoderConfig

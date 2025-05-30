@@ -18,6 +18,8 @@ namespace live.videosdk
         //public event Action<StreamKind> OnStreamPausedCallback;
         //public event Action<StreamKind> OnStreamResumedCallback;
 
+
+
         public string Id
         {
             get
@@ -193,6 +195,7 @@ namespace live.videosdk
             {
                 case true:
                     RegisterParticipantCallback();
+                    ToggleAreaShow(_participant);
                     break;
                 case false:
                     RemoveTexture();
@@ -246,6 +249,8 @@ namespace live.videosdk
         private void OnStreamEnabled(StreamKind kind)
         {
             OnStreamEnableCallback?.Invoke(kind);
+
+            SetOnOffUI(kind, true);
         }
 
         private void OnStreamDisabled(StreamKind kind)
@@ -256,6 +261,8 @@ namespace live.videosdk
             }
 
             OnStreamDisableCallback?.Invoke(kind);
+
+            SetOnOffUI(kind, false);
         }
 
         private void OnStreamPaused(StreamKind kind)
@@ -282,29 +289,38 @@ namespace live.videosdk
             _videoTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
         }
 
-        public void SetVideo(bool status, CustomVideoStream customVideoStream = null)
+        public void SetVideo(bool status = false, CustomVideoStream customVideoStream = null)
         {
             if (_participant == null) return;
-            if (!IsLocal)
-            {
-                Debug.LogError($"{name} participantId {Id} is not your local participant");
-                return;
-            }
+            //if (!IsLocal)
+            //{
+            //    Debug.LogError($"{name} participantId {Id} is not your local participant");
+            //    return;
+            //}
 
             string customVideoStreamStr = JsonConvert.SerializeObject(customVideoStream);
             _participant.ToggleWebCam(status, customVideoStreamStr);
         }
 
-        public void SetAudio(bool status)
+        public void SetAudio(bool status = false)
         {
             if (_participant == null) return;
-            if (!IsLocal)
-            {
-                Debug.LogError($"{name} participantId {Id} is not your local participant");
-                return;
-            }
+            //if (!IsLocal)
+            //{
+            //    Debug.LogError($"{name} participantId {Id} is not your local participant");
+            //    return;
+            //}
             _participant.ToggleMic(status);
         }
+
+
+        public void Leave()
+        {
+            if (_participant == null) return;
+            _participant.Leave();
+        }
+
+
         public void PauseStream(StreamKind kind)
         {
             if (_participant == null) return;
@@ -330,6 +346,49 @@ namespace live.videosdk
         {
             UnRegisterParticipantCallback();
         }
+
+        #region Toggle
+        [Header("=== Toggle === ")]
+        [SerializeField] private GameObject toggleArea;
+        [SerializeField] private Sprite micOn, micOff, camOn, camOff;
+        [SerializeField] private Button mic, cam;
+
+        private void ToggleAreaShow(IUser participant)
+        {
+            toggleArea.SetActive(!participant.IsLocal);
+        }
+
+        private void SetOnOffUI(StreamKind kind, bool isEnable)
+        {
+            if (_participant.IsLocal) return;
+            switch (kind)
+            {
+                case StreamKind.AUDIO:
+                    mic.image.sprite = isEnable ? micOn : micOff;
+                    break;
+                case StreamKind.VIDEO:
+                    cam.image.sprite = isEnable ? camOn : camOff;
+                    break;
+            }
+        }
+
+        // Assign on button
+        public void RemoteMicToggle()
+        {
+            SetAudio();
+        }
+        // Assign on button
+        public void RemoteWebCamToggle()
+        {
+            SetVideo();
+        }
+        // Assign on button
+        public void RemoveRemoteParticipant()
+        {
+            Leave();
+        }
+
+        #endregion
 
     }
 

@@ -58,6 +58,14 @@ func OnPausedAllStreams(_ kind: UnsafePointer<CChar>)
 @_silgen_name("OnResumedAllStreams")
 func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
 
+@_silgen_name("OnMicRequested")
+func OnMicRequested(_ id: UnsafePointer<CChar>, _ accept: @escaping @convention(block) () -> Void, _ reject: @escaping @convention(block) () -> Void)
+
+@_silgen_name("OnWebcamRequested")
+func OnWebcamRequested(_ id: UnsafePointer<CChar>, _ accept: @escaping @convention(block) () -> Void, _ reject: @escaping @convention(block) () -> Void)
+
+
+
 @available(iOS 14.0, *)
 @objc public class VideoSDKHelper: NSObject {
     
@@ -125,6 +133,7 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
                                   sdkName: String? = nil,
                                   sdkVersion: String? = nil,
                                   encoderConfig: String? = nil) {
+        print("encoder config", encoderConfig)
         var (encoderEnum, multi, facing) = (self.encoderConfig, self.multiStream, self.facingMode.facing)
         if let encoderConfig = encoderConfig {
             (encoderEnum, multi, facing) = extractEncoderConfig(from: encoderConfig)
@@ -168,6 +177,7 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
     }
     
     @objc public func toggleWebCam(status: Bool, encoderConfig: String? = nil) {
+        print("got called")
         guard let meeting = meeting,
               status != webCamEnabled,
               meetingState == .CONNECTED
@@ -180,6 +190,7 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
                  self.encoderConfig = encoderEnum
                  self.multiStream = multi
             }
+            print(encoderEnum, multi, facing.rawValue)
             let customTrack  = createCustomVideoTrack(
                 facing: facing,
                 encoder: encoderEnum,
@@ -300,6 +311,7 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
     }
     
     @objc public func getSelectedAudioDevice() -> String {
+        print(currentAudioDevice?.toJsonString(prettyPrint: true))
         return currentAudioDevice?.toJsonString(prettyPrint: true) ?? ""
     }
     
@@ -320,9 +332,11 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
     
     @objc public func changeVideoDevice(_ device: String) {
         guard currentVideoDevice?.deviceId != device else {
+            print("returning")
                 return
         }
         guard meeting != nil else {
+            print("meeting is nil")
             facingMode.toggle()
             self.currentVideoDevice = facingMode.deviceInfo
             return
@@ -371,9 +385,55 @@ func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
         ]
     }
     
+    @objc public func toggleRemoteMic(participantId: String, micStatus: Bool) {
+        print("toggleRemoteMic method called start")
+        
+        let participant = participants.first { $0.id == participantId }
+        print("Found participant: \(participant?.id ?? "nil")")
+        
+        if micStatus {
+            print("Enabling mic for participant \(participantId)")
+            participant?.enableMic()
+        } else {
+            print("Disabling mic for participant \(participantId)")
+            participant?.disableMic()
+        }
+
+        print("toggleRemoteMic method called End")
+    }
+
+    
+    @objc public func toggleRemoteWebcam(participantId: String,webcamStatus: Bool){
+        print("toggleRemoteWebcam method called start")
+
+        let participant = participants.first { $0.id == participantId }
+        print("Found participant: \(participant?.id ?? "nil")")
+        
+        if webcamStatus {
+            print("Enabling webcam for participant \(participantId)")
+            participant?.enableWebcam()
+        } else {
+            print("Disabling webcam for participant \(participantId)")
+            participant?.disableWebcam()
+        }
+        print("toggleRemoteWebcam method called End")
+    }
+
+    @objc public func removeRemoteParticipant(participantId: String){
+        print("removeRemoteParticipant method called start")
+        let participant = participants.first { $0.id == participantId }
+        print("Found participant: \(participant?.id ?? "nil")")
+
+        participant?.remove()
+        print("removeRemoteParticipant method called End")
+    }
+
+    
     @objc public func dummy() {
         
     }
+    
+    
 }
 
 @available(iOS 14.0, *)
@@ -514,6 +574,26 @@ extension VideoSDKHelper: MeetingEventListener {
                break
            }
        }
+    
+    
+    @objc public func onMicRequested(participantId: String?, accept: @escaping () -> Void, reject: @escaping () -> Void) {
+        let cString = participantId?.cString(using: .utf8) ?? "".cString(using: .utf8)!
+        cString.withUnsafeBufferPointer { buffer in
+            if let baseAddress = buffer.baseAddress {
+                OnMicRequested(baseAddress, accept, reject)
+            }
+        }
+    }
+
+  @objc public func onWebcamRequested(participantId: String?, accept: @escaping () -> Void, reject: @escaping () -> Void) {
+        let cString = participantId?.cString(using: .utf8) ?? "".cString(using: .utf8)!
+        cString.withUnsafeBufferPointer { buffer in
+            if let baseAddress = buffer.baseAddress {
+                OnWebcamRequested(baseAddress, accept, reject)
+            }
+        }
+    }
+    
 }
 
 @available(iOS 14.0, *)
@@ -756,7 +836,7 @@ extension VideoSDKHelper: ParticipantEventListener {
         multiStream: Bool
     ) -> CustomRTCMediaStream? {
         do {
-            return try? VideoSDK.createCameraVideoTrack(
+            return try VideoSDK.createCameraVideoTrack(
                 encoderConfig: encoder,
                 facingMode:    facing,
                 multiStream:   multiStream
@@ -793,6 +873,7 @@ extension VideoSDKHelper {
         
         var devices: [(String, String)] = [("Speaker", "Speaker")]
         for input in audioSession.availableInputs! {
+            print(input.portName, input.portType)
             let deviceName: String = input.portName
             let deviceType: String =  (deviceName == "iPhone Microphone") ? "Receiver" : input.portType.rawValue
             let device = (deviceName,deviceType)

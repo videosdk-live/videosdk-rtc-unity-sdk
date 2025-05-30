@@ -27,6 +27,12 @@ typedef void (*OnSpeakerChangedDelegate)(const char* id);
 typedef void (*OnPausedAllStreamsDelegate)(const char* kind);
 typedef void (*OnResumedAllStreamsDelegate)(const char* kind);
 typedef void (*OnAudioDeviceChangedDelegate)(const char* availableDevice, const char* selectedDevice);
+typedef void (*OnMicRequestedDelegate)(const char* participantId,
+                                       void (*acceptPtr)(const char*),
+                                       void (*rejectPtr)(const char*));
+typedef void (*OnWebcamRequestedDelegate)(const char* participantId,
+                                          void (*acceptPtr)(const char*),
+                                          void (*rejectPtr)(const char*));
 
 static OnMeetingJoinedDelegate onMeetingJoinedCallback = NULL;
 static OnMeetingLeftDelegate onMeetingLeftCallback = NULL;
@@ -44,6 +50,10 @@ static OnSpeakerChangedDelegate onSpeakerChangedCallback = NULL;
 static OnPausedAllStreamsDelegate onPausedAllStreamsCallback = NULL;
 static OnResumedAllStreamsDelegate onResumedAllStreamsCallback = NULL;
 static OnAudioDeviceChangedDelegate onAudioDeviceChangedCallback = NULL;
+static OnMicRequestedDelegate onMicRequestedCallback = NULL;
+static OnWebcamRequestedDelegate onWebcamRequestedCallback = NULL;
+
+
 
 
 #pragma mark - Functions called by unity
@@ -148,6 +158,21 @@ void changeVideoDevice(const char* device) {
 
 void setSpeakerMute(bool status) {
     [[VideoSDKHelper shared] setSpeakerMuteWithStatus:status];
+}
+
+void toggleRemoteMic(const char* participantId, bool micStatus) {
+    NSString *participantIdStr = [NSString stringWithUTF8String:participantId];
+    [[VideoSDKHelper shared] toggleRemoteMicWithParticipantId:participantIdStr micStatus:micStatus];
+}
+
+void toggleRemoteWebcam(const char* participantId, bool webcamStatus) {
+    NSString *participantIdStr = [NSString stringWithUTF8String:participantId];
+    [[VideoSDKHelper shared] toggleRemoteWebcamWithParticipantId:participantIdStr webcamStatus:webcamStatus];
+}
+
+void removeRemoteParticipant(const char* participantId) {
+    NSString *participantIdStr = [NSString stringWithUTF8String:participantId];
+    [[VideoSDKHelper shared] removeRemoteParticipantWithParticipantId:participantIdStr];
 }
 
 void setVideoEncoderConfig(const char* config) {
@@ -310,5 +335,50 @@ void OnResumedAllStreams(const char* kind) {
         onResumedAllStreamsCallback(kind);
     }
 }
+
+void OnMicRequested(const char* participantId, void (^accept)(void), void (^reject)(void)) {
+    if (onMicRequestedCallback) {
+        // Create C function pointers that capture and call the blocks
+        static void (^capturedAccept)(void) = nil;
+        static void (^capturedReject)(void) = nil;
+        
+        // Store the blocks
+        capturedAccept = [accept copy];
+        capturedReject = [reject copy];
+        
+        // Create C function wrappers
+        void (*acceptWrapper)(const char*) = [](const char* result) {
+            if (capturedAccept) capturedAccept();
+        };
+        void (*rejectWrapper)(const char*) = [](const char* result) {
+            if (capturedReject) capturedReject();
+        };
+        
+        onMicRequestedCallback(participantId, acceptWrapper, rejectWrapper);
+    }
+}
+
+void OnWebcamRequested(const char* participantId, void (^accept)(void), void (^reject)(void)) {
+    if (onWebcamRequestedCallback) {
+        // Create C function pointers that capture and call the blocks
+        static void (^capturedAccept)(void) = nil;
+        static void (^capturedReject)(void) = nil;
+        
+        // Store the blocks
+        capturedAccept = [accept copy];
+        capturedReject = [reject copy];
+        
+        // Create C function wrappers
+        void (*acceptWrapper)(const char*) = [](const char* result) {
+            if (capturedAccept) capturedAccept();
+        };
+        void (*rejectWrapper)(const char*) = [](const char* result) {
+            if (capturedReject) capturedReject();
+        };
+        
+        onWebcamRequestedCallback(participantId, acceptWrapper, rejectWrapper);
+    }
+}
+
 
 }

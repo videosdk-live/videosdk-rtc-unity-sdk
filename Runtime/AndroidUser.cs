@@ -89,7 +89,7 @@ namespace live.videosdk
 
         public override void OnStreamEnabled(string kind)
         {
-            //Debug.Log($"StreamEnabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
+            Debug.Log($"StreamEnabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
             _videoSdkDto.SendDTO("INFO", $"StreamEnabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
             if (kind.ToLower().Equals("video"))
             {
@@ -110,7 +110,7 @@ namespace live.videosdk
 
         public override void OnStreamDisabled(string kind)
         {
-            //Debug.Log($"StreamDisabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
+            Debug.Log($"StreamDisabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
             _videoSdkDto.SendDTO("INFO", $"StreamDisabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName} ");
             if (kind.ToLower().Equals("video"))
             {
@@ -249,7 +249,10 @@ namespace live.videosdk
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.ToggleWebCam(status, ParticipantId, customVideoStream);
+
+            status = !CamEnabled;
+
+            _meetControlls.ToggleWebCam(IsLocal, status, ParticipantId, customVideoStream);
         }
         public void ToggleMic(bool status)
         {
@@ -258,7 +261,19 @@ namespace live.videosdk
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.ToggleMic(status, ParticipantId);
+
+            status = !MicEnabled;
+            _meetControlls.ToggleMic(IsLocal, status, ParticipantId);
+        }
+
+        public void Leave()
+        {
+            if (_meetControlls == null)
+            {
+                Debug.LogError("It seems you don't have active meet instance, please join meet first");
+                return;
+            }
+            _meetControlls.Leave(ParticipantId);
         }
 
         public void PauseStream(StreamKind kind)
@@ -301,7 +316,6 @@ namespace live.videosdk
                 MainThreadDispatcher.Instance.Enqueue(action);
             }
         }
-
 
 
     }

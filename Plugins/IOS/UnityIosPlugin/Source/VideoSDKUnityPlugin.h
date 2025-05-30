@@ -30,6 +30,10 @@ void OnSpeakerChanged(const char* id);
 void OnPausedAllStreams(const char* kind);
 void OnResumedAllStreams(const char* kind);
 
+void OnMicRequested(const char* participantId, void (^accept)(void), void (^reject)(void));
+void OnWebcamRequested(const char* participantId, void (^accept)(void), void (^reject)(void));
+
+
 #ifdef __cplusplus
 }
 #endif

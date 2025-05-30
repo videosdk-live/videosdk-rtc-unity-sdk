@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 // Callback class to receive messages from Android
 namespace live.videosdk
 {
@@ -6,9 +7,7 @@ namespace live.videosdk
     {
         void SubscribeToPausedAllStreams(Action<string> callback);
         void SubscribeToResumedAllStreams(Action<string> callback);
-
         void SubscribeToAudioDeviceChanged(Action<string, string> callback);
-
         void SubscribeToError(Action<string> callback);
         void SubscribeToExternalCallHangup(Action callback);
         void SubscribeToExternalCallRinging(Action callback);
@@ -19,9 +18,12 @@ namespace live.videosdk
         void SubscribeToParticipantJoined(Action<string, string, bool> callback);
         void SubscribeToParticipantLeft(Action<string, string, bool> callback);
         void SubscribeToSpeakerChanged(Action<string> callback);
+        void SubscribeToWebcamRequested(Action<string, Action, Action> callback);
+        void SubscribeToMicRequested(Action<string, Action, Action> callback);
 
+
+      
         void UnsubscribeFromAudioDeviceChanged(Action<string, string> callback);
-
         void UnsubscribeFromError(Action<string> callback);
         void UnsubscribeFromExternalCallHangup(Action callback);
         void UnsubscribeFromExternalCallRinging(Action callback);
@@ -34,7 +36,9 @@ namespace live.videosdk
         void UnsubscribeFromSpeakerChanged(Action<string> callback);
         void UnsubscribeFromPausedAllStreams(Action<string> callback);
         void UnsubscribeFromResumedAllStreams(Action<string> callback);
+        void UnsubscribeFromWebcamRequested(Action<string, Action, Action> callback);
+        void UnsubscribeFromMicRequested(Action<string, Action, Action> callback);
     }
 
-//#endif
+    //#endif
 }

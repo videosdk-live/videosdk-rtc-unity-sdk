@@ -92,7 +92,7 @@ namespace live.videosdk
             OnErrorCallback -= callback;
         }
 
-        
+
         public void SubscribeToAudioDeviceChanged(Action<string, string> callback) => OnAudioDeviceChangedCallback += callback;
         public void UnsubscribeFromAudioDeviceChanged(Action<string, string> callback) => OnAudioDeviceChangedCallback -= callback;
 
@@ -102,6 +102,13 @@ namespace live.videosdk
 
         public void SubscribeToExternalCallHangup(Action callback) => OnExternalCallHangupCallback += callback;
         public void UnsubscribeFromExternalCallHangup(Action callback) => OnExternalCallHangupCallback -= callback;
+
+
+        public void SubscribeToWebcamRequested(Action<string, Action, Action> callback) => OnWebcamRequestedCallback += callback;
+        public void UnsubscribeFromWebcamRequested(Action<string, Action, Action> callback) => OnWebcamRequestedCallback -= callback;
+
+        public void SubscribeToMicRequested(Action<string, Action, Action> callback) => OnMicRequestedCallback += callback;
+        public void UnsubscribeFromMicRequested(Action<string, Action, Action> callback) => OnMicRequestedCallback -= callback;
 
         public void SubscribeToExternalCallStarted(Action callback)
         {
@@ -156,6 +163,11 @@ namespace live.videosdk
         private event Action OnExternalCallRingingCallback;
         private event Action<string> OnPausedAllStreamsCallback;
         private event Action<string> OnResumedAllStreamsCallback;
+
+        private event Action<string, Action, Action> OnWebcamRequestedCallback;
+        private event Action<string, Action, Action> OnMicRequestedCallback;
+
+
 
         private void OnMeetingJoined(string meetingId, string Id, string name, bool enabledLogs, string logEndPoint, string jwtKey, string peerId, string sessionId)
         {
@@ -225,6 +237,36 @@ namespace live.videosdk
             OnResumedAllStreamsCallback?.Invoke(kind);
         }
 
+        private void OnWebcamRequested(string participantId, AndroidJavaObject accept, AndroidJavaObject reject)
+        {
+            RunOnUnityMainThread(() =>
+            {
+                // Convert the AndroidJavaObject (Runnable) to an Action
+                Action acceptAction = () => accept?.Call("run");
+                Action rejectAction = () => reject?.Call("run");
+                OnWebcamRequestedCallback?.Invoke(participantId, acceptAction, rejectAction);
+            });
+        }
+
+        private void OnMicRequested(string participantId, AndroidJavaObject accept, AndroidJavaObject reject)
+        {
+            RunOnUnityMainThread(() =>
+            {
+                // Convert the AndroidJavaObject (Runnable) to an Action
+                Action acceptAction = () => accept?.Call("run");
+                Action rejectAction = () => reject?.Call("run");
+                OnMicRequestedCallback?.Invoke(participantId, acceptAction, rejectAction);
+            });
+        }
+
+
+        public static void RunOnUnityMainThread(Action action)
+        {
+            if (action != null)
+            {
+                MainThreadDispatcher.Instance.Enqueue(action);
+            }
+        }
 
     }
 #endif

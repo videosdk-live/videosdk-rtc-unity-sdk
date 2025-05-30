@@ -151,6 +151,12 @@ namespace live.videosdk
             _meetCallback.UnsubscribeFromResumedAllStreams(callback);
         }
 
+        public void SubscribeToWebcamRequested(Action<string, Action, Action> callback) => _meetCallback.SubscribeToWebcamRequested(callback);
+        public void UnsubscribeFromWebcamRequested(Action<string, Action, Action> callback) => _meetCallback.UnsubscribeFromWebcamRequested(callback);
+
+        public void SubscribeToMicRequested(Action<string, Action, Action> callback) => _meetCallback.SubscribeToMicRequested(callback);
+        public void UnsubscribeFromMicRequested(Action<string, Action, Action> callback) => _meetCallback.UnsubscribeFromMicRequested(callback);
+
 
         #endregion
 
