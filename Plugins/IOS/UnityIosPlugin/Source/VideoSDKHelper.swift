@@ -59,10 +59,10 @@ func OnPausedAllStreams(_ kind: UnsafePointer<CChar>)
 func OnResumedAllStreams(_ kind: UnsafePointer<CChar>)
 
 @_silgen_name("OnMicRequested")
-func OnMicRequested(_ id: UnsafePointer<CChar>, _ accept: @escaping @convention(block) () -> Void, _ reject: @escaping @convention(block) () -> Void)
+func OnMicRequested(_ id: UnsafePointer<CChar>)
 
 @_silgen_name("OnWebcamRequested")
-func OnWebcamRequested(_ id: UnsafePointer<CChar>, _ accept: @escaping @convention(block) () -> Void, _ reject: @escaping @convention(block) () -> Void)
+func OnWebcamRequested(_ id: UnsafePointer<CChar>)
 
 
 
@@ -386,11 +386,11 @@ func OnWebcamRequested(_ id: UnsafePointer<CChar>, _ accept: @escaping @conventi
     }
     
     @objc public func toggleRemoteMic(participantId: String, micStatus: Bool) {
-        print("toggleRemoteMic method called start")
         
         let participant = participants.first { $0.id == participantId }
         print("Found participant: \(participant?.id ?? "nil")")
-        
+        print("micStatus status", micStatus)
+
         if micStatus {
             print("Enabling mic for participant \(participantId)")
             participant?.enableMic()
@@ -404,11 +404,10 @@ func OnWebcamRequested(_ id: UnsafePointer<CChar>, _ accept: @escaping @conventi
 
     
     @objc public func toggleRemoteWebcam(participantId: String,webcamStatus: Bool){
-        print("toggleRemoteWebcam method called start")
-
+        
         let participant = participants.first { $0.id == participantId }
         print("Found participant: \(participant?.id ?? "nil")")
-        
+        print("webcam status", webcamStatus)
         if webcamStatus {
             print("Enabling webcam for participant \(participantId)")
             participant?.enableWebcam()
@@ -416,7 +415,6 @@ func OnWebcamRequested(_ id: UnsafePointer<CChar>, _ accept: @escaping @conventi
             print("Disabling webcam for participant \(participantId)")
             participant?.disableWebcam()
         }
-        print("toggleRemoteWebcam method called End")
     }
 
     @objc public func removeRemoteParticipant(participantId: String){
@@ -579,8 +577,8 @@ extension VideoSDKHelper: MeetingEventListener {
     @objc public func onMicRequested(participantId: String?, accept: @escaping () -> Void, reject: @escaping () -> Void) {
         let cString = participantId?.cString(using: .utf8) ?? "".cString(using: .utf8)!
         cString.withUnsafeBufferPointer { buffer in
-            if let baseAddress = buffer.baseAddress {
-                OnMicRequested(baseAddress, accept, reject)
+            if let participantId = buffer.baseAddress {
+                OnMicRequested(participantId)
             }
         }
     }
@@ -588,8 +586,8 @@ extension VideoSDKHelper: MeetingEventListener {
   @objc public func onWebcamRequested(participantId: String?, accept: @escaping () -> Void, reject: @escaping () -> Void) {
         let cString = participantId?.cString(using: .utf8) ?? "".cString(using: .utf8)!
         cString.withUnsafeBufferPointer { buffer in
-            if let baseAddress = buffer.baseAddress {
-                OnWebcamRequested(baseAddress, accept, reject)
+            if let participantId = buffer.baseAddress {
+                OnWebcamRequested(participantId)
             }
         }
     }

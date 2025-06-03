@@ -27,12 +27,8 @@ typedef void (*OnSpeakerChangedDelegate)(const char* id);
 typedef void (*OnPausedAllStreamsDelegate)(const char* kind);
 typedef void (*OnResumedAllStreamsDelegate)(const char* kind);
 typedef void (*OnAudioDeviceChangedDelegate)(const char* availableDevice, const char* selectedDevice);
-typedef void (*OnMicRequestedDelegate)(const char* participantId,
-                                       void (*acceptPtr)(const char*),
-                                       void (*rejectPtr)(const char*));
-typedef void (*OnWebcamRequestedDelegate)(const char* participantId,
-                                          void (*acceptPtr)(const char*),
-                                          void (*rejectPtr)(const char*));
+typedef void (*OnMicRequestedDelegate)(const char* participantId);
+typedef void (*OnWebcamRequestedDelegate)(const char* participantId);
 
 static OnMeetingJoinedDelegate onMeetingJoinedCallback = NULL;
 static OnMeetingLeftDelegate onMeetingLeftCallback = NULL;
@@ -52,8 +48,6 @@ static OnResumedAllStreamsDelegate onResumedAllStreamsCallback = NULL;
 static OnAudioDeviceChangedDelegate onAudioDeviceChangedCallback = NULL;
 static OnMicRequestedDelegate onMicRequestedCallback = NULL;
 static OnWebcamRequestedDelegate onWebcamRequestedCallback = NULL;
-
-
 
 
 #pragma mark - Functions called by unity
@@ -180,6 +174,18 @@ void setVideoEncoderConfig(const char* config) {
 //    [[VideoSDKHelper shared] setVideoEncoderConfigWithConfig:configStr];
 }
 
+void onMicResponse(const char* Id, bool micStatus) {
+    NSString *participantId = [NSString stringWithUTF8String:Id];
+    [[VideoSDKHelper shared] toggleMicWithStatus:micStatus];
+}
+
+void onWebCamResponse(const char* Id, bool webCamStatus,const char* encoderConfig) {
+    NSString *participantId = [NSString stringWithUTF8String:Id];
+    NSString *encoderConfigStr = encoderConfig ? [NSString stringWithUTF8String:encoderConfig] : nil;
+    [[VideoSDKHelper shared] toggleWebCamWithStatus:webCamStatus encoderConfig:encoderConfigStr];
+}
+
+
 #pragma mark - Register Callback function
 
 void RegisterMeetingCallbacks(
@@ -195,7 +201,9 @@ void RegisterMeetingCallbacks(
     OnExternalCallHangupDelegate onExternalCallHangup,
     OnPausedAllStreamsDelegate onPausedAllStreams,
     OnResumedAllStreamsDelegate onResumedAllStreams,
-    OnAudioDeviceChangedDelegate onAudioDeviceChanged) {
+    OnAudioDeviceChangedDelegate onAudioDeviceChanged,
+    OnMicRequestedDelegate  onMicRequested,
+    OnWebcamRequestedDelegate onWebcamRequested) {
     
     onMeetingJoinedCallback = onMeetingJoined;
     onMeetingLeftCallback = onMeetingLeft;
@@ -210,6 +218,10 @@ void RegisterMeetingCallbacks(
     onPausedAllStreamsCallback = onPausedAllStreams;
     onResumedAllStreamsCallback = onResumedAllStreams;
     onAudioDeviceChangedCallback = onAudioDeviceChanged;
+    onMicRequestedCallback = onMicRequested;
+    onWebcamRequestedCallback = onWebcamRequested;
+
+
     [[VideoSDKHelper shared] dummy];
     NSLog(@"Meeting callbacks registered successfully");
 }
@@ -230,11 +242,11 @@ void RegisterUserCallbacks(
 //    OnExternalCallStartedDelegate onExternalCallStarted,
 //    OnExternalCallRingingDelegate onExternalCallRinging,
 //    OnExternalCallHangupDelegate onExternalCallHangup) {
-//    
+//
 //    onExternalCallStartedCallback = onExternalCallStarted;
 //    onExternalCallRingingCallback = onExternalCallRinging;
 //    onExternalCallHangupCallback = onExternalCallHangup;
-//    
+//
 //    NSLog(@"Call state callbacks registered successfully");
 //}
 
@@ -335,50 +347,19 @@ void OnResumedAllStreams(const char* kind) {
         onResumedAllStreamsCallback(kind);
     }
 }
-
-void OnMicRequested(const char* participantId, void (^accept)(void), void (^reject)(void)) {
+void OnMicRequested(const char* participantId) {
     if (onMicRequestedCallback) {
-        // Create C function pointers that capture and call the blocks
-        static void (^capturedAccept)(void) = nil;
-        static void (^capturedReject)(void) = nil;
-        
-        // Store the blocks
-        capturedAccept = [accept copy];
-        capturedReject = [reject copy];
-        
-        // Create C function wrappers
-        void (*acceptWrapper)(const char*) = [](const char* result) {
-            if (capturedAccept) capturedAccept();
-        };
-        void (*rejectWrapper)(const char*) = [](const char* result) {
-            if (capturedReject) capturedReject();
-        };
-        
-        onMicRequestedCallback(participantId, acceptWrapper, rejectWrapper);
+        onMicRequestedCallback(participantId);
     }
 }
 
-void OnWebcamRequested(const char* participantId, void (^accept)(void), void (^reject)(void)) {
+void OnWebcamRequested(const char* participantId) {
     if (onWebcamRequestedCallback) {
-        // Create C function pointers that capture and call the blocks
-        static void (^capturedAccept)(void) = nil;
-        static void (^capturedReject)(void) = nil;
-        
-        // Store the blocks
-        capturedAccept = [accept copy];
-        capturedReject = [reject copy];
-        
-        // Create C function wrappers
-        void (*acceptWrapper)(const char*) = [](const char* result) {
-            if (capturedAccept) capturedAccept();
-        };
-        void (*rejectWrapper)(const char*) = [](const char* result) {
-            if (capturedReject) capturedReject();
-        };
-        
-        onWebcamRequestedCallback(participantId, acceptWrapper, rejectWrapper);
+        onWebcamRequestedCallback(participantId);
     }
 }
 
-
 }
+
+
+

@@ -235,10 +235,10 @@ namespace live.videosdk
         public delegate void OnAudioDeviceChangedDelegate(string availableDevice, string selectedDevice);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnMicRequestedDelegate(string participantId, IntPtr acceptPtr, IntPtr rejectPtr);
+        public delegate void OnMicRequestedDelegate(string participantId);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnWebcamRequestedDelegate(string participantId, IntPtr acceptPtr, IntPtr rejectPtr);
+        public delegate void OnWebcamRequestedDelegate(string participantId);
 
         // Bind the delegates to native functions
         [DllImport("__Internal")]
@@ -337,21 +337,15 @@ namespace live.videosdk
         }
 
         [AOT.MonoPInvokeCallback(typeof(OnMicRequestedDelegate))]
-        private static void OnMicRequested(string participantId, IntPtr acceptPtr, IntPtr rejectPtr)
+        private static void OnMicRequested(string participantId)
         {
-            Action acceptAction = Marshal.GetDelegateForFunctionPointer<Action>(acceptPtr);
-            Action rejectAction = Marshal.GetDelegateForFunctionPointer<Action>(rejectPtr);
-
-            Instance.OnMicRequestedCallback?.Invoke(participantId, acceptAction, rejectAction);
+            Instance.OnMicRequestedCallback?.Invoke(participantId,null , null);
         }
 
         [AOT.MonoPInvokeCallback(typeof(OnWebcamRequestedDelegate))]
-        private static void OnWebcamRequested(string participantId, IntPtr acceptPtr, IntPtr rejectPtr)
+        private static void OnWebcamRequested(string participantId)
         {
-            Action acceptAction = Marshal.GetDelegateForFunctionPointer<Action>(acceptPtr);
-            Action rejectAction = Marshal.GetDelegateForFunctionPointer<Action>(rejectPtr);
-
-            Instance.OnWebcamRequestedCallback?.Invoke(participantId, acceptAction, rejectAction);
+            Instance.OnWebcamRequestedCallback?.Invoke(participantId, null, null);
         }
     }
 #endif

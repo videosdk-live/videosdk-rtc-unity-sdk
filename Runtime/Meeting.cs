@@ -41,6 +41,8 @@ namespace live.videosdk
 
         public event Action<string> OnMicRequestedCallback;
 
+        private IUser _localParticipant;
+
 
         //public event Action<string, string> OnAvailableAudioDevicesCallback;
         public event Action<AudioDeviceInfo[], AudioDeviceInfo> OnAudioDeviceChangedCallback;
@@ -236,7 +238,7 @@ namespace live.videosdk
         public void Join(string token, string meetingId, string name, bool micEnabled, bool camEnabled, CustomVideoStream encorderConfig = null, string participantId = null)
         {
 
-            meetingId = "123456789";
+            //meetingId = "wssy-4q3m-lhwi";
 
             if (string.IsNullOrEmpty(meetingId))
             {
@@ -404,7 +406,12 @@ namespace live.videosdk
             Debug.Log($"PraticipantJoin:- Id: {Id} IsLocal: {isLocal} ParticipantName: {name}");
             _videoSdkDto.SendDTO("INFO", $"PraticipantJoin:- Id: {Id} IsLocal: {isLocal} ParticipantName: {name}");
             var participantData = new Participant(Id, name, isLocal);
-            AddParticipant(Id, UserFactory.Create(participantData, MeetingControllFactory.Create(_videoSdkDto), _videoSdkDto));
+
+            IUser participant = UserFactory.Create(participantData, MeetingControllFactory.Create(_videoSdkDto), _videoSdkDto);
+
+            if (isLocal) _localParticipant = participant;
+
+            AddParticipant(Id, participant);
             RunOnUnityMainThread(() =>
             {
                 OnParticipantJoinedCallback?.Invoke(participantData);
@@ -421,6 +428,7 @@ namespace live.videosdk
                 if (isLocal)
                 {
                     PreMeetingController.OnSetCameraDeviceSet?.Invoke(selectedVideoDevice);
+                    _localParticipant = null;
                 }
 
                 if (_participantsDict.TryGetValue(Id, out IUser participant))
@@ -548,8 +556,12 @@ namespace live.videosdk
         #region Remote Access
         Action accept = null;
         Action reject = null;
+
+        StreamKind requestStream;
+
         private void OnWebcamRequested(string participantId, Action accept, Action reject)
         {
+            requestStream = StreamKind.VIDEO;
             RunOnUnityMainThread(() =>
             {
                 this.accept = accept;
@@ -560,6 +572,7 @@ namespace live.videosdk
 
         private void OnMicRequested(string participantId, Action accept, Action reject)
         {
+            requestStream = StreamKind.AUDIO;
             RunOnUnityMainThread(() =>
             {
                 this.accept = accept;
@@ -570,8 +583,20 @@ namespace live.videosdk
 
         public void Request(bool isAccept)
         {
-            Action action = isAccept ? accept : reject;
-            action?.Invoke();
+            if (isAccept)
+            {
+                switch (requestStream)
+                {
+                    case StreamKind.AUDIO:
+                        _localParticipant?.ToggleMic(true);
+                        break;
+                    case StreamKind.VIDEO:
+                        _localParticipant?.ToggleWebCam(true, null);
+                        break;
+                }
+            }
+            //Action action = isAccept ? accept : reject;
+            //action?.Invoke();
         }
 
         #endregion
