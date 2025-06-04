@@ -170,7 +170,6 @@ namespace live.videosdk
                 return;
             }
 
-            status = !CamEnabled;
             _meetControlls.ToggleWebCam(IsLocal, status, ParticipantId, customVideoStream);
         }
         public void ToggleMic(bool status)
@@ -180,7 +179,6 @@ namespace live.videosdk
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            status = !MicEnabled;
             _meetControlls.ToggleMic(IsLocal, status, ParticipantId);
         }
 

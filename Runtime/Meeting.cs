@@ -37,9 +37,9 @@ namespace live.videosdk
         public event Action<StreamKind> OnPausedAllStreamsCallback;
         public event Action<StreamKind> OnResumedAllStreamsCallback;
 
-        public event Action<string> OnWebcamRequestedCallback;
+        public event Action<string, Action, Action> OnWebcamRequestedCallback;
 
-        public event Action<string> OnMicRequestedCallback;
+        public event Action<string, Action, Action> OnMicRequestedCallback;
 
         private IUser _localParticipant;
 
@@ -238,7 +238,7 @@ namespace live.videosdk
         public void Join(string token, string meetingId, string name, bool micEnabled, bool camEnabled, CustomVideoStream encorderConfig = null, string participantId = null)
         {
 
-            //meetingId = "wssy-4q3m-lhwi";
+            meetingId = "123456789";
 
             if (string.IsNullOrEmpty(meetingId))
             {
@@ -554,19 +554,15 @@ namespace live.videosdk
         }
 
         #region Remote Access
-        Action accept = null;
-        Action reject = null;
-
         StreamKind requestStream;
-
         private void OnWebcamRequested(string participantId, Action accept, Action reject)
         {
             requestStream = StreamKind.VIDEO;
             RunOnUnityMainThread(() =>
             {
-                this.accept = accept;
-                this.reject = reject;
-                OnWebcamRequestedCallback?.Invoke(participantId);
+                accept = () => Request(true);
+                reject = () => Request(false);
+                OnWebcamRequestedCallback?.Invoke(participantId, accept, reject);
             });
         }
 
@@ -575,9 +571,9 @@ namespace live.videosdk
             requestStream = StreamKind.AUDIO;
             RunOnUnityMainThread(() =>
             {
-                this.accept = accept;
-                this.reject = reject;
-                OnMicRequestedCallback?.Invoke(participantId);
+                accept = () => Request(true);
+                reject = () => Request(false);
+                OnMicRequestedCallback?.Invoke(participantId, accept, reject);
             });
         }
 
@@ -595,10 +591,7 @@ namespace live.videosdk
                         break;
                 }
             }
-            //Action action = isAccept ? accept : reject;
-            //action?.Invoke();
         }
-
         #endregion
     }
 

@@ -289,7 +289,7 @@ namespace live.videosdk
             _videoTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
         }
 
-        public void SetVideo(bool status = false, CustomVideoStream customVideoStream = null)
+        public void SetVideo(bool status, CustomVideoStream customVideoStream = null)
         {
             if (_participant == null) return;
             //if (!IsLocal)
@@ -297,12 +297,14 @@ namespace live.videosdk
             //    Debug.LogError($"{name} participantId {Id} is not your local participant");
             //    return;
             //}
+
+            if (CamEnabled == status) return;
 
             string customVideoStreamStr = JsonConvert.SerializeObject(customVideoStream);
             _participant.ToggleWebCam(status, customVideoStreamStr);
         }
 
-        public void SetAudio(bool status = false)
+        public void SetAudio(bool status)
         {
             if (_participant == null) return;
             //if (!IsLocal)
@@ -310,6 +312,9 @@ namespace live.videosdk
             //    Debug.LogError($"{name} participantId {Id} is not your local participant");
             //    return;
             //}
+
+            if (MicEnabled == status) return;
+
             _participant.ToggleMic(status);
         }
 
@@ -375,12 +380,14 @@ namespace live.videosdk
         // Assign on button
         public void RemoteMicToggle()
         {
-            SetAudio();
+            bool status = !MicEnabled;
+            SetAudio(status);
         }
         // Assign on button
         public void RemoteWebCamToggle()
         {
-            SetVideo();
+            bool status = !CamEnabled;
+            SetVideo(status);
         }
         // Assign on button
         public void RemoveRemoteParticipant()
