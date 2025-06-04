@@ -49,7 +49,7 @@ namespace live.videosdk
             }
         }
 
-        public void Leave(string Id)
+        public void Remove(string Id)
         {
             _pluginClass.CallStatic("removeRemoteParticipant", Id);
             _videoSdkDto.SendDTO("INFO", $"RemoveRemoteParticipant:- ParticipantId:{Id}");

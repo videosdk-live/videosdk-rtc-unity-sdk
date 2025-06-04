@@ -21,7 +21,7 @@ namespace live.videosdk
         void ToggleMic(bool status);
         void ToggleWebCam(bool status, string customVideoStream);
 
-        void Leave();
+        void Remove();
 
         void PauseStream(StreamKind kind);
         void ResumeStream(StreamKind kind);

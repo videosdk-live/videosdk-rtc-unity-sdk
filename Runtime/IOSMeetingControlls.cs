@@ -41,7 +41,7 @@ namespace live.videosdk
                 _videoSdkDto.SendDTO("INFO", $"ToggleRemoteMic:- status:{status} ParticipantId:{Id}");
             }
         }
-        public void Leave(string Id)
+        public void Remove(string Id)
         {
             removeRemoteParticipant(Id);
             _videoSdkDto.SendDTO("INFO", $"RemoveRemoteParticipant:- ParticipantId:{Id}");

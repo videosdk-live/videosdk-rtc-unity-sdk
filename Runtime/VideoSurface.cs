@@ -319,10 +319,10 @@ namespace live.videosdk
         }
 
 
-        public void Leave()
+        public void Remove()
         {
             if (_participant == null) return;
-            _participant.Leave();
+            _participant.Remove();
         }
 
 
@@ -392,7 +392,7 @@ namespace live.videosdk
         // Assign on button
         public void RemoveRemoteParticipant()
         {
-            Leave();
+            Remove();
         }
 
         #endregion

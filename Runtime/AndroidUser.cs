@@ -261,14 +261,14 @@ namespace live.videosdk
             _meetControlls.ToggleMic(IsLocal, status, ParticipantId);
         }
 
-        public void Leave()
+        public void Remove()
         {
             if (_meetControlls == null)
             {
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.Leave(ParticipantId);
+            _meetControlls.Remove(ParticipantId);
         }
 
         public void PauseStream(StreamKind kind)
