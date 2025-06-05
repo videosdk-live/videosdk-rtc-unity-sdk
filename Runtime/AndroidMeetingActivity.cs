@@ -111,6 +111,10 @@ namespace live.videosdk
                 var meetingId = result["meetingId"].ToString();
                 string platform = "Unity-" + Application.platform.ToString();
 
+                if (encorderConfig == null)
+                {
+                    encorderConfig = new CustomVideoStream(VideoEncoderConfig.h144p_w176p);
+                }
 
                 JoinMeetingConfig joinMeetingConfig = new JoinMeetingConfig(token,
                                                                             meetingId,

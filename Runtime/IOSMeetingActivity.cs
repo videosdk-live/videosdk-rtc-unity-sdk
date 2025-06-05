@@ -18,7 +18,7 @@ namespace live.videosdk
             _videoSdkDto = videoSdkDto;
         }
 
-        #region meet-events
+    #region meet-events
 
         // Public methods to subscribe and unsubscribe to events
         public void SubscribeToMeetingJoined(Action<string, string, string, bool, bool, string, string, string, string> callback)
@@ -158,7 +158,7 @@ namespace live.videosdk
         public void UnsubscribeFromMicRequested(Action<string, Action, Action> callback) => _meetCallback.UnsubscribeFromMicRequested(callback);
 
 
-        #endregion
+    #endregion
 
         public void CreateMeetingId(string jsonResponse, string token, Action<string> onSuccess)
         {
@@ -184,6 +184,11 @@ namespace live.videosdk
 
                 var meetingId = result["meetingId"].ToString();
                 string platform = "Unity-" + Application.platform.ToString();
+
+                if (encorderConfig == null)
+                {
+                    encorderConfig = new CustomVideoStream(VideoEncoderConfig.h90p_w160p);
+                }
 
                 string encoderConfigJsonStr = JsonConvert.SerializeObject(encorderConfig);
 

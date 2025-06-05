@@ -274,6 +274,13 @@ namespace live.videosdk
             }
             participantId = participantId == null ? Guid.NewGuid().ToString().Substring(0, 5) : participantId;
 
+            if (encorderConfig == null)
+            {
+#if PLATFORM_ANDROID
+                CustomVideoStream defaultEncorderConfig = new CustomVideoStream(VideoEncoderConfig.h144p_w176p);
+#endif
+            }
+
             _meetingActivity?.JoinMeeting(token, task.Result, name, micEnabled, camEnabled, participantId, _packageVersion, encorderConfig);
         }
 
@@ -311,7 +318,7 @@ namespace live.videosdk
         }
 
 
-        [HideInInspector] public VideoDeviceInfo selectedVideoDevice = null;
+        [HideInInspector] public static VideoDeviceInfo selectedVideoDevice = null;
         public VideoDeviceInfo GetSelectedVideoDevice()
         {
 
@@ -332,7 +339,7 @@ namespace live.videosdk
             {
                 string videoDevice = _meetingActivity?.GetSelectedVideoDevice();
                 VideoDeviceInfo selectedVideoDevice = JsonConvert.DeserializeObject<VideoDeviceInfo>(videoDevice);
-                this.selectedVideoDevice = selectedVideoDevice;
+                Meeting.selectedVideoDevice = selectedVideoDevice;
                 return selectedVideoDevice;
             }
 
@@ -348,7 +355,7 @@ namespace live.videosdk
         {
             selectedVideoDevice = videoDevice;
             _meetingActivity?.ChangeVideoDevice(videoDevice.label);
-            PreMeetingController.OnSetCameraDeviceSet?.Invoke(selectedVideoDevice);
+
         }
         public void PauseAllStreams(StreamKind kind)
         {
@@ -384,10 +391,7 @@ namespace live.videosdk
             {
                 OnParticipantLeftCallback?.Invoke(new Participant(Id, name, isLocal));
 
-                if (isLocal)
-                {
-                    PreMeetingController.OnSetCameraDeviceSet?.Invoke(selectedVideoDevice);
-                }
+               
 
                 foreach (var user in _participantsDict.Values)
                 {
@@ -427,7 +431,6 @@ namespace live.videosdk
 
                 if (isLocal)
                 {
-                    PreMeetingController.OnSetCameraDeviceSet?.Invoke(selectedVideoDevice);
                     _localParticipant = null;
                 }
 
@@ -597,8 +600,8 @@ namespace live.videosdk
 
     public enum VideoEncoderConfig
     {
-        h90p_w160p,
-        h144p_w176p,
+        h90p_w160p, // default ios
+        h144p_w176p, // default android
         h240p_w320p,
         h360p_w640p,
         h480p_w640p,
@@ -659,7 +662,7 @@ namespace live.videosdk
 
         public CustomVideoStream(VideoEncoderConfig videoEncoder = VideoEncoderConfig.h240p_w320p, bool isMultiStream = false, VideoDeviceInfo videoDevice = null)
         {
-            if (videoDevice == null) videoDevice = Meeting.GetMeetingObject().selectedVideoDevice;
+            if (videoDevice == null) videoDevice = Meeting.selectedVideoDevice;
 
             this.videoEncoder = videoEncoder;
             this.isMultiStream = isMultiStream;

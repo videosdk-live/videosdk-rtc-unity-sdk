@@ -195,7 +195,6 @@ namespace live.videosdk
             {
                 case true:
                     RegisterParticipantCallback();
-                    ToggleAreaShow(_participant);
                     break;
                 case false:
                     RemoveTexture();
@@ -249,8 +248,6 @@ namespace live.videosdk
         private void OnStreamEnabled(StreamKind kind)
         {
             OnStreamEnableCallback?.Invoke(kind);
-
-            SetOnOffUI(kind, true);
         }
 
         private void OnStreamDisabled(StreamKind kind)
@@ -261,8 +258,6 @@ namespace live.videosdk
             }
 
             OnStreamDisableCallback?.Invoke(kind);
-
-            SetOnOffUI(kind, false);
         }
 
         private void OnStreamPaused(StreamKind kind)
@@ -353,48 +348,8 @@ namespace live.videosdk
         }
 
         #region Toggle
-        [Header("=== Toggle === ")]
-        [SerializeField] private GameObject toggleArea;
-        [SerializeField] private Sprite micOn, micOff, camOn, camOff;
-        [SerializeField] private Button mic, cam;
-
-        private void ToggleAreaShow(IUser participant)
-        {
-            toggleArea.SetActive(!participant.IsLocal);
-        }
-
-        private void SetOnOffUI(StreamKind kind, bool isEnable)
-        {
-            if (_participant.IsLocal) return;
-            switch (kind)
-            {
-                case StreamKind.AUDIO:
-                    mic.image.sprite = isEnable ? micOn : micOff;
-                    break;
-                case StreamKind.VIDEO:
-                    cam.image.sprite = isEnable ? camOn : camOff;
-                    break;
-            }
-        }
-
-        // Assign on button
-        public void RemoteMicToggle()
-        {
-            bool status = !MicEnabled;
-            SetAudio(status);
-        }
-        // Assign on button
-        public void RemoteWebCamToggle()
-        {
-            bool status = !CamEnabled;
-            SetVideo(status);
-        }
-        // Assign on button
-        public void RemoveRemoteParticipant()
-        {
-            Remove();
-        }
-
+     
+      
         #endregion
 
     }
