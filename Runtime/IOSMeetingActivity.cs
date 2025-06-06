@@ -185,7 +185,7 @@ namespace live.videosdk
                 var meetingId = result["meetingId"].ToString();
                 string platform = "Unity-" + Application.platform.ToString();
 
-                if (encorderConfig == null)
+                if (encorderConfig == null && camEnable)
                 {
                     encorderConfig = new CustomVideoStream(VideoEncoderConfig.h90p_w160p);
                 }

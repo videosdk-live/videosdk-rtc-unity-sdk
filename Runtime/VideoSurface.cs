@@ -294,9 +294,7 @@ namespace live.videosdk
             //}
 
             if (CamEnabled == status) return;
-
-            string customVideoStreamStr = JsonConvert.SerializeObject(customVideoStream);
-            _participant.ToggleWebCam(status, customVideoStreamStr);
+            _participant.ToggleWebCam(status, customVideoStream);
         }
 
         public void SetAudio(bool status)
@@ -348,8 +346,8 @@ namespace live.videosdk
         }
 
         #region Toggle
-     
-      
+
+
         #endregion
 
     }

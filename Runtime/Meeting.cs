@@ -237,9 +237,6 @@ namespace live.videosdk
 
         public void Join(string token, string meetingId, string name, bool micEnabled, bool camEnabled, CustomVideoStream encorderConfig = null, string participantId = null)
         {
-
-            meetingId = "123456789";
-
             if (string.IsNullOrEmpty(meetingId))
             {
                 Debug.LogError("Invalid Join Meeting Arguments Meet-Id can't be null or empty");
@@ -272,15 +269,7 @@ namespace live.videosdk
                 yield break;
 
             }
-            participantId = participantId == null ? Guid.NewGuid().ToString().Substring(0, 5) : participantId;
-
-            if (encorderConfig == null)
-            {
-#if PLATFORM_ANDROID
-                CustomVideoStream defaultEncorderConfig = new CustomVideoStream(VideoEncoderConfig.h144p_w176p);
-#endif
-            }
-
+            participantId = participantId == null ? Guid.NewGuid().ToString().Substring(0, 8) : participantId;
             _meetingActivity?.JoinMeeting(token, task.Result, name, micEnabled, camEnabled, participantId, _packageVersion, encorderConfig);
         }
 
@@ -293,7 +282,6 @@ namespace live.videosdk
         public AudioDeviceInfo[] GetAudioDevices()
         {
             string availableDevices = _meetingActivity?.GetAudioDevices();
-            Debug.Log("GetAudioDevices " + availableDevices);
             // Deserialize directly from array JSON
             AudioDeviceInfo[] availableAudioDevice = JsonConvert.DeserializeObject<AudioDeviceInfo[]>(availableDevices);
             return availableAudioDevice;
@@ -391,7 +379,7 @@ namespace live.videosdk
             {
                 OnParticipantLeftCallback?.Invoke(new Participant(Id, name, isLocal));
 
-               
+
 
                 foreach (var user in _participantsDict.Values)
                 {
@@ -407,7 +395,6 @@ namespace live.videosdk
             {
                 return;
             }
-            Debug.Log($"PraticipantJoin:- Id: {Id} IsLocal: {isLocal} ParticipantName: {name}");
             _videoSdkDto.SendDTO("INFO", $"PraticipantJoin:- Id: {Id} IsLocal: {isLocal} ParticipantName: {name}");
             var participantData = new Participant(Id, name, isLocal);
 

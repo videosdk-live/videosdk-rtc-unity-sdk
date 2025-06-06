@@ -19,7 +19,7 @@ namespace live.videosdk
         event Action<StreamKind> OnStreamResumedCallaback;
 
         void ToggleMic(bool status);
-        void ToggleWebCam(bool status, string customVideoStream);
+        void ToggleWebCam(bool status, CustomVideoStream customVideoStream);
 
         void Remove();
 

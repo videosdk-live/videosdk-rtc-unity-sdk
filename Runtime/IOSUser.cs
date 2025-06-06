@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using UnityEngine;
 
 namespace live.videosdk
@@ -162,7 +163,7 @@ namespace live.videosdk
         }
 
         #region CallToNative
-        public void ToggleWebCam(bool status, string customVideoStream)
+        public void ToggleWebCam(bool status, CustomVideoStream customVideoStream)
         {
             if (_meetControlls == null)
             {
@@ -170,7 +171,14 @@ namespace live.videosdk
                 return;
             }
 
-            _meetControlls.ToggleWebCam(IsLocal, status, ParticipantId, customVideoStream);
+            if (customVideoStream == null && status)
+            {
+                customVideoStream = new CustomVideoStream(VideoEncoderConfig.h90p_w160p);
+            }
+
+            string customVideoStreamStr = JsonConvert.SerializeObject(customVideoStream);
+
+            _meetControlls.ToggleWebCam(IsLocal, status, ParticipantId, customVideoStreamStr);
         }
         public void ToggleMic(bool status)
         {

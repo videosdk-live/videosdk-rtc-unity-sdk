@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -89,7 +90,6 @@ namespace live.videosdk
 
         public override void OnStreamEnabled(string kind)
         {
-            Debug.Log($"StreamEnabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
             _videoSdkDto.SendDTO("INFO", $"StreamEnabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
             if (kind.ToLower().Equals("video"))
             {
@@ -110,7 +110,6 @@ namespace live.videosdk
 
         public override void OnStreamDisabled(string kind)
         {
-            Debug.Log($"StreamDisabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName}");
             _videoSdkDto.SendDTO("INFO", $"StreamDisabled:- Kind: {kind} Id: {ParticipantId} ParticipantName: {ParticipantName} ");
             if (kind.ToLower().Equals("video"))
             {
@@ -242,14 +241,22 @@ namespace live.videosdk
 
 
         #region CallToNative
-        public void ToggleWebCam(bool status, string customVideoStream = null)
+        public void ToggleWebCam(bool status, CustomVideoStream customVideoStream = null)
         {
             if (_meetControlls == null)
             {
                 Debug.LogError("It seems you don't have active meet instance, please join meet first");
                 return;
             }
-            _meetControlls.ToggleWebCam(IsLocal, status, ParticipantId, customVideoStream);
+
+            if (customVideoStream == null && status)
+            {
+                customVideoStream = new CustomVideoStream(VideoEncoderConfig.h144p_w176p);
+            }
+
+            string customVideoStreamStr = JsonConvert.SerializeObject(customVideoStream);
+
+            _meetControlls.ToggleWebCam(IsLocal, status, ParticipantId, customVideoStreamStr);
         }
         public void ToggleMic(bool status)
         {
