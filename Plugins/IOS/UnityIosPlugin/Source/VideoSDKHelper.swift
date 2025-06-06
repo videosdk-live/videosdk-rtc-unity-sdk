@@ -145,6 +145,7 @@ func OnWebcamRequested(_ id: UnsafePointer<CChar>)
         let customVideoTrack = webCamEnabled ? createCustomVideoTrack(facing: facing, encoder: encoderEnum, multiStream: multi) : nil
         self.meeting = VideoSDK.initMeeting(
             meetingId: meetingId,
+            meetingId: meetingId,
             participantId: participantId ?? "",
             participantName: participantName,
             micEnabled: micEnabled,

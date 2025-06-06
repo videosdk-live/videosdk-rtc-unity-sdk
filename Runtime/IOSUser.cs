@@ -28,7 +28,7 @@ namespace live.videosdk
             if (participantData != null)
             {
                 IsLocal = participantData.IsLocal;
-                ParticipantId = participantData.ParticipantId;
+                ParticipantId = participantData.Id;
                 ParticipantName = participantData.Name;
                 _meetControlls = meetControlls;
                 _videoSdkDto = videoSDK;

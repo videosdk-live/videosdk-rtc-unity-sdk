@@ -6,7 +6,7 @@ namespace live.videosdk
 {
     public interface IParticipant
     {
-        string ParticipantId { get; }
+        string Id { get; }
         string Name { get; }
         bool IsLocal { get; }
         string ToString();
