@@ -21,7 +21,7 @@ namespace live.videosdk
         private static MeetingState _meetState;
         private IMeetingActivity _meetingActivity;
         private IVideoSDKDTO _videoSdkDto;
-        private const string _packageVersion = "0.2.1";
+        private const string _packageVersion = "2.1.0";
         #region Callbacks For User
         public event Action<string> OnCreateMeetingIdCallback;
         public event Action<string> OnCreateMeetingIdFailedCallback;
@@ -34,7 +34,6 @@ namespace live.videosdk
         public event Action OnCallStartedCallback;
         public event Action OnCallRingingCallback;
         public event Action<string> OnJoinMeetingFailedCallback;
-        private event Action<string, string[]> OnAudioDeviceChangedCallback;
         public event Action<StreamKind> OnPausedAllStreamsCallback;
         public event Action<StreamKind> OnResumedAllStreamsCallback;
 
