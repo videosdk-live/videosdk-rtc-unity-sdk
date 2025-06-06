@@ -8,11 +8,11 @@ namespace live.videosdk
 {
 
 #if UNITY_IOS
-    internal sealed class IOSMeetingActivity :IMeetingActivity
+    internal sealed class IOSMeetingActivity : IMeetingActivity
     {
         private IMeetingCallback _meetCallback;
         private IVideoSDKDTO _videoSdkDto;
-        public IOSMeetingActivity(IMeetingCallback meetCallback,IVideoSDKDTO videoSdkDto)
+        public IOSMeetingActivity(IMeetingCallback meetCallback, IVideoSDKDTO videoSdkDto)
         {
             _meetCallback = meetCallback;
             _videoSdkDto = videoSdkDto;
@@ -81,24 +81,14 @@ namespace live.videosdk
             _meetCallback.UnsubscribeFromError(callback);
         }
 
-        public void SubscribeToAudioDeviceChanged(Action<string, string[]> callback)
+        public void SubscribeToAudioDeviceChanged(Action<string, string> callback)
         {
             _meetCallback.SubscribeToAudioDeviceChanged(callback);
         }
 
-        public void UnsubscribeFromAudioDeviceChanged(Action<string, string[]> callback)
+        public void UnsubscribeFromAudioDeviceChanged(Action<string, string> callback)
         {
             _meetCallback.UnsubscribeFromAudioDeviceChanged(callback);
-        }
-
-        public void SubscribeToFetchAudioDevice(Action<string[]> callback)
-        {
-            _meetCallback.SubscribeToFetchAudioDevice(callback);
-        }
-
-        public void UnsubscribeFromFetchAudioDevice(Action<string[]> callback)
-        {
-            _meetCallback.UnsubscribeFromFetchAudioDevice(callback);
         }
 
         public void SubscribeToSpeakerChanged(Action<string> callback)
@@ -161,6 +151,12 @@ namespace live.videosdk
             _meetCallback.UnsubscribeFromResumedAllStreams(callback);
         }
 
+        public void SubscribeToWebcamRequested(Action<string, Action, Action> callback) => _meetCallback.SubscribeToWebcamRequested(callback);
+        public void UnsubscribeFromWebcamRequested(Action<string, Action, Action> callback) => _meetCallback.UnsubscribeFromWebcamRequested(callback);
+
+        public void SubscribeToMicRequested(Action<string, Action, Action> callback) => _meetCallback.SubscribeToMicRequested(callback);
+        public void UnsubscribeFromMicRequested(Action<string, Action, Action> callback) => _meetCallback.UnsubscribeFromMicRequested(callback);
+
 
     #endregion
 
@@ -180,22 +176,30 @@ namespace live.videosdk
 
         }
 
-        public void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId,string packageVersion)
+        public void JoinMeeting(string token, string jsonResponse, string name, bool micEnable, bool camEnable, string participantId, string packageVersion, CustomVideoStream encorderConfig)
         {
             try
             {
                 JObject result = JObject.Parse(jsonResponse);
 
                 var meetingId = result["meetingId"].ToString();
-                string platform = "Unity-"+Application.platform.ToString();
-                joinMeeting(token, meetingId, name, micEnable, camEnable, participantId,packageVersion,platform);
+                string platform = "Unity-" + Application.platform.ToString();
+
+                if (encorderConfig == null && camEnable)
+                {
+                    encorderConfig = new CustomVideoStream(VideoEncoderConfig.h90p_w160p);
+                }
+
+                string encoderConfigJsonStr = JsonConvert.SerializeObject(encorderConfig);
+
+                joinMeeting(token, meetingId, name, micEnable, camEnable, participantId, packageVersion, platform, encoderConfigJsonStr);
                 _videoSdkDto.SendDTO("INFO", $"JoinMeeting:- MeetingId:{meetingId}");
             }
             catch (Exception ex)
             {
                 Debug.LogError(ex.StackTrace);
             }
-            
+
         }
 
         public void LeaveMeeting()
@@ -222,6 +226,36 @@ namespace live.videosdk
             _videoSdkDto.SendDTO("INFO", $"ResumeAllStreams:- Kind:{kind}");
         }
 
+        public string GetAudioDevices()
+        {
+            return getAudioDevices();
+        }
+
+        public string GetVideoDevices()
+        {
+            return getVideoDevices();
+        }
+
+        public string GetSelectedAudioDevice()
+        {
+            return getSelectedAudioDevice();
+        }
+
+        public string GetSelectedVideoDevice()
+        {
+            return getSelectedVideoDevice();
+        }
+
+        public void ChangeAudioDevice(string deviceLabel)
+        {
+            changeAudioDevice(deviceLabel);
+        }
+
+        public void ChangeVideoDevice(string deviceLabel)
+        {
+            changeVideoDevice(deviceLabel);
+        }
+
         [DllImport("__Internal")]
         private static extern void setVideoEncoderConfig(string config);
 
@@ -229,13 +263,30 @@ namespace live.videosdk
         private static extern void leave();
 
         [DllImport("__Internal")]
-        private static extern void joinMeeting(string token, string meetingId, string name, bool micEnable, bool camEnable, string participantId, string packageVersion,string platform);
+        private static extern void joinMeeting(string token, string meetingId, string name, bool micEnable, bool camEnable, string participantId, string packageVersion, string platform, string encorderConfig);
 
         [DllImport("__Internal")]
         private static extern void pauseAllStreams(string kind);
 
         [DllImport("__Internal")]
         private static extern void resumeAllStreams(string kind);
+
+        [DllImport("__Internal")]
+        private static extern string getAudioDevices();
+
+        [DllImport("__Internal")]
+        private static extern string getVideoDevices();
+
+        [DllImport("__Internal")]
+        private static extern string getSelectedAudioDevice();
+
+        [DllImport("__Internal")]
+        private static extern string getSelectedVideoDevice();
+
+        [DllImport("__Internal")]
+        private static extern void changeAudioDevice(string deviceLabel);
+        [DllImport("__Internal")]
+        private static extern void changeVideoDevice(string deviceLabel);
 
 
     }

@@ -3,14 +3,14 @@ using System.Runtime.InteropServices;
 namespace live.videosdk
 {
 #if UNITY_IOS
-    internal sealed class IOSMeetingCallback:IMeetingCallback
+    internal sealed class IOSMeetingCallback : IMeetingCallback
     {
         private static IOSMeetingCallback _instance;
         public static IOSMeetingCallback Instance
         {
             get
             {
-                if(_instance==null)
+                if (_instance == null)
                 {
                     _instance = new IOSMeetingCallback();
                 }
@@ -26,18 +26,21 @@ namespace live.videosdk
         static IOSMeetingCallback()
         {
             RegisterMeetingCallbacks(OnMeetingJoined,
-          OnMeetingLeft,
-          OnParticipantJoined,
-          OnParticipantLeft,
-          OnMeetingStateChanged,
-          OnError,
-          OnSpeakerChanged,
-          OnExternalCallStarted,
-          OnExternalCallRinging,
-          OnExternalCallHangup,
-          OnPausedAllStreams,
-          OnResumedAllStreams
-              );
+            OnMeetingLeft,
+            OnParticipantJoined,
+            OnParticipantLeft,
+            OnMeetingStateChanged,
+            OnError,
+            OnSpeakerChanged,
+            OnExternalCallStarted,
+            OnExternalCallRinging,
+            OnExternalCallHangup,
+            OnPausedAllStreams,
+            OnResumedAllStreams,
+            OnAudioDeviceChanged,
+            OnMicRequested,
+            OnWebcamRequested
+            );
         }
 
         // Public methods to subscribe and unsubscribe to events
@@ -101,34 +104,24 @@ namespace live.videosdk
             OnErrorCallback -= callback;
         }
 
-        public void SubscribeToAudioDeviceChanged(Action<string, string[]> callback)
+        public void SubscribeToAudioDeviceChanged(Action<string, string> callback)
         {
             OnAudioDeviceChangedCallback += callback;
         }
 
-        public void UnsubscribeFromAudioDeviceChanged(Action<string, string[]> callback)
+        public void UnsubscribeFromAudioDeviceChanged(Action<string, string> callback)
         {
             OnAudioDeviceChangedCallback -= callback;
         }
 
-        public void SubscribeToFetchAudioDevice(Action<string[]> callback)
-        {
-            OnFetchAudioDeviceCallback += callback;
-        }
-
-        public void UnsubscribeFromFetchAudioDevice(Action<string[]> callback)
-        {
-            OnFetchAudioDeviceCallback -= callback;
-        }
-
         public void SubscribeToSpeakerChanged(Action<string> callback)
         {
-            OnSpeakerChangedCallback+=callback;
+            OnSpeakerChangedCallback += callback;
         }
 
         public void UnsubscribeFromSpeakerChanged(Action<string> callback)
         {
-            OnSpeakerChangedCallback-=callback;
+            OnSpeakerChangedCallback -= callback;
         }
 
         public void SubscribeToExternalCallHangup(Action callback)
@@ -176,16 +169,21 @@ namespace live.videosdk
             OnResumedAllStreamsCallback -= callback;
         }
 
+        public void SubscribeToWebcamRequested(Action<string, Action, Action> callback) => OnWebcamRequestedCallback += callback;
+        public void UnsubscribeFromWebcamRequested(Action<string, Action, Action> callback) => OnWebcamRequestedCallback -= callback;
 
+        public void SubscribeToMicRequested(Action<string, Action, Action> callback) => OnMicRequestedCallback += callback;
+        public void UnsubscribeFromMicRequested(Action<string, Action, Action> callback) => OnMicRequestedCallback -= callback;
 
-        private event Action<string, string, string, bool, bool , string , string , string , string > OnMeetingJoinedCallback;
+        private event Action<string, string, string, bool, bool, string, string, string, string> OnMeetingJoinedCallback;
         private event Action<string, string, bool> OnMeetingLeftCallback;
         private event Action<string, string, bool> OnParticipantJoinedCallback;
         private event Action<string, string, bool> OnParticipantLeftCallback;
         private event Action<string> OnErrorCallback;
         private event Action<string> OnMeetingStateChangedCallback;
-        private event Action<string, string[]> OnAudioDeviceChangedCallback;
-        private event Action<string[]> OnFetchAudioDeviceCallback;
+
+        private event Action<string, string> OnAudioDeviceChangedCallback;
+
         private event Action<string> OnSpeakerChangedCallback;
         private event Action OnExternalCallHangupCallback;
         private event Action OnExternalCallStartedCallback;
@@ -193,9 +191,12 @@ namespace live.videosdk
         private event Action<string> OnPausedAllStreamsCallback;
         private event Action<string> OnResumedAllStreamsCallback;
 
+        private event Action<string, Action, Action> OnWebcamRequestedCallback;
+        private event Action<string, Action, Action> OnMicRequestedCallback;
+
         // Delegate definitions
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnMeetingJoinedDelegate(string meetingId, string Id, string name,bool enabledLogs,string logEndPoint, string jwtKey, string peerId, string sessionId);
+        public delegate void OnMeetingJoinedDelegate(string meetingId, string Id, string name, bool enabledLogs, string logEndPoint, string jwtKey, string peerId, string sessionId);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnMeetingLeftDelegate(string Id, string name);
@@ -230,6 +231,15 @@ namespace live.videosdk
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnResumedAllStreamsDelegate(string kind);
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnAudioDeviceChangedDelegate(string availableDevice, string selectedDevice);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnMicRequestedDelegate(string participantId);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnWebcamRequestedDelegate(string participantId);
+
         // Bind the delegates to native functions
         [DllImport("__Internal")]
         private static extern void RegisterMeetingCallbacks(
@@ -244,13 +254,16 @@ namespace live.videosdk
             OnExternalCallRingingDelegate onCallRinging,
             OnExternalCallHangupDelegate onCallHangup,
             OnPausedAllStreamsDelegate OnPausedAllStreams,
-            OnResumedAllStreamsDelegate OnResumedAllStreams
+            OnResumedAllStreamsDelegate OnResumedAllStreams,
+            OnAudioDeviceChangedDelegate OnAudioDeviceChanged,
+            OnMicRequestedDelegate OnMicRequested,
+            OnWebcamRequestedDelegate OnWebcamRequested
         );
 
         [AOT.MonoPInvokeCallback(typeof(OnMeetingJoinedDelegate))]
-        private static void OnMeetingJoined(string meetingId, string Id, string name, bool enabledLogs,string logEndPoint, string jwtKey, string peerId, string sessionId)
+        private static void OnMeetingJoined(string meetingId, string Id, string name, bool enabledLogs, string logEndPoint, string jwtKey, string peerId, string sessionId)
         {
-            Instance.OnMeetingJoinedCallback?.Invoke(meetingId, Id, name, true,enabledLogs,logEndPoint,jwtKey,peerId,sessionId);
+            Instance.OnMeetingJoinedCallback?.Invoke(meetingId, Id, name, true, enabledLogs, logEndPoint, jwtKey, peerId, sessionId);
         }
 
         [AOT.MonoPInvokeCallback(typeof(OnMeetingLeftDelegate))]
@@ -315,6 +328,24 @@ namespace live.videosdk
         private static void OnResumedAllStreams(string kind)
         {
             Instance.OnResumedAllStreamsCallback?.Invoke(kind);
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(OnAudioDeviceChangedDelegate))]
+        private static void OnAudioDeviceChanged(string availableDevice, string selectedDevice)
+        {
+            Instance.OnAudioDeviceChangedCallback?.Invoke(availableDevice, selectedDevice);
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(OnMicRequestedDelegate))]
+        private static void OnMicRequested(string participantId)
+        {
+            Instance.OnMicRequestedCallback?.Invoke(participantId,null , null);
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(OnWebcamRequestedDelegate))]
+        private static void OnWebcamRequested(string participantId)
+        {
+            Instance.OnWebcamRequestedCallback?.Invoke(participantId, null, null);
         }
     }
 #endif

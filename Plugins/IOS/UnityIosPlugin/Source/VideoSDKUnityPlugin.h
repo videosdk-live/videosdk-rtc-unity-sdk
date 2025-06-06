@@ -24,11 +24,14 @@ void OnExternalCallStarted();
 void OnExternalCallRinging();
 void OnExternalCallHangup();
 
-void OnAudioDeviceChanged(const char* selectedDevice, const char* deviceList);
+void OnAudioDeviceChanged(const char* availableDevice, const char* selectedDevice);
 void OnSpeakerChanged(const char* id);
 
 void OnPausedAllStreams(const char* kind);
 void OnResumedAllStreams(const char* kind);
+
+void OnMicRequested(const char* participantId);
+void OnWebcamRequested(const char* participantId);
 
 #ifdef __cplusplus
 }

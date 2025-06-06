@@ -1,7 +1,5 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
+using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -97,7 +95,7 @@ namespace live.videosdk
         {
             _renderer = GetComponentInChildren<Renderer>();
             _rawImage = GetComponentInChildren<RawImage>();
-            _videoTexture = new Texture2D(720, 480, TextureFormat.RGBA32, false);
+            _videoTexture = new Texture2D(960, 720, TextureFormat.RGBA32, false);
             Flip(FlipTexture);
         }
 
@@ -166,7 +164,7 @@ namespace live.videosdk
         {
             if (_rawImage != null)
             {
-                _rawImage.rectTransform.localScale = status? new Vector3(-1, 1, 1): new Vector3(1, 1, 1);
+                _rawImage.rectTransform.localScale = status ? new Vector3(-1, 1, 1) : new Vector3(1, 1, 1);
             }
             if (_renderer != null)
             {
@@ -228,11 +226,14 @@ namespace live.videosdk
         private void UnRegisterVideoFrameCallbacks()
         {
             _participant.OnVideoFrameReceivedCallback -= OnVideoFrameReceived;
+            _participant.OnTexureSizeChangedCallback -= OnTexureSizeChanged;
 
         }
         private void RegisterVideoFrameCallbacks()
         {
             _participant.OnVideoFrameReceivedCallback += OnVideoFrameReceived;
+            _participant.OnTexureSizeChangedCallback += OnTexureSizeChanged;
+
         }
 
         private void OnParticipantLeft()
@@ -275,27 +276,47 @@ namespace live.videosdk
             }
         }
 
-        public void SetVideo(bool status)
+        private void OnTexureSizeChanged(int height, int width)
+        {
+            Debug.Log($"OnTexureSizeChanged {height}  {width}");
+            _videoTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+        }
+
+        public void SetVideo(bool status, CustomVideoStream customVideoStream = null)
         {
             if (_participant == null) return;
-            if (!IsLocal)
-            {
-                Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
-                return;
-            }
-            _participant.ToggleWebCam(status);
+            //if (!IsLocal)
+            //{
+            //    Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
+            //    return;
+            //}
+
+            if (CamEnabled == status) return;
+            _participant.ToggleWebCam(status, customVideoStream);
         }
 
         public void SetAudio(bool status)
         {
             if (_participant == null) return;
-            if (!IsLocal)
-            {
-                Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
-                return;
-            }
+            //if (!IsLocal)
+            //{
+            //    Debug.LogError($"{name} participantId {ParticipantId} is not your local participant");
+            //    return;
+            //}
+
+            if (MicEnabled == status) return;
+
             _participant.ToggleMic(status);
         }
+
+
+        public void Remove()
+        {
+            if (_participant == null) return;
+            _participant.Remove();
+        }
+
+
         public void PauseStream(StreamKind kind)
         {
             if (_participant == null) return;
@@ -321,6 +342,11 @@ namespace live.videosdk
         {
             UnRegisterParticipantCallback();
         }
+
+        #region Toggle
+
+
+        #endregion
 
     }
 

@@ -11,6 +11,7 @@ namespace live.videosdk
         bool CamEnabled { get; }
 
         event Action<byte[]> OnVideoFrameReceivedCallback;
+        event Action<int, int> OnTexureSizeChangedCallback;
         event Action<StreamKind> OnStreamEnabledCallaback;
         event Action<StreamKind> OnStreamDisabledCallaback;
         event Action OnParticipantLeftCallback;
@@ -18,7 +19,10 @@ namespace live.videosdk
         event Action<StreamKind> OnStreamResumedCallaback;
 
         void ToggleMic(bool status);
-        void ToggleWebCam(bool status);
+        void ToggleWebCam(bool status, CustomVideoStream customVideoStream);
+
+        void Remove();
+
         void PauseStream(StreamKind kind);
         void ResumeStream(StreamKind kind);
         void OnParticipantLeft();
