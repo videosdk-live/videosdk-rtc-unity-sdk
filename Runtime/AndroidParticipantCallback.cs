@@ -18,6 +18,8 @@ namespace live.videosdk
 
         public abstract void OnVideoFrameReceived(string videoStream);
 
+        public abstract void OnAudioFrameReceived(string audioData, int sampleRate, int channels, int samplesPerChannel);
+
     }
 
 #endif

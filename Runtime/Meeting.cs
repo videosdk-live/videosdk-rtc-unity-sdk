@@ -235,6 +235,7 @@ namespace live.videosdk
 
         public void Join(string token, string meetingId, string name, bool micEnabled, bool camEnabled, CustomVideoStream encorderConfig = null, string participantId = null)
         {
+            meetingId = "123456";
             if (string.IsNullOrEmpty(meetingId))
             {
                 Debug.LogError("Invalid Join Meeting Arguments Meet-Id can't be null or empty");
